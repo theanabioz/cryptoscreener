@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 
     const res = await fetch(backendUrl, {
       cache: 'no-store',
+    });
     
     if (!res.ok) {
       throw new Error(`Backend responded with ${res.status}`);
