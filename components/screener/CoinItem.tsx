@@ -7,6 +7,8 @@ import { Sparkline } from '../ui/Sparkline'
 import Link from 'next/link'
 import { useHaptic } from '@/hooks/useHaptic'
 
+import { PriceFlash } from '../ui/PriceFlash'
+
 interface CoinItemProps {
   coin: Coin;
 }
@@ -77,9 +79,7 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
 
           {/* Right: Price + Change */}
           <VStack align="end" spacing={0} w="35%">
-            <Text fontWeight="medium" fontSize="sm" color="white">
-              ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-            </Text>
+            <PriceFlash price={price} color="white" fontWeight="medium" fontSize="sm" />
             <Badge 
               colorScheme={badgeColor} 
               variant="solid" 

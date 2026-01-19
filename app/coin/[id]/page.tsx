@@ -11,6 +11,7 @@ import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 import { useWatchlistStore } from '@/store/useWatchlistStore';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useCoins } from '@/hooks/useCoins';
+import { PriceFlash } from '@/components/ui/PriceFlash';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -72,14 +73,12 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
       {/* Main Price Info */}
       <VStack p={4} align="start" spacing={1}>
         <Flex w="full" justify="space-between" align="center">
-          <HStack align="center" spacing={3}>
-             <Image src={coin.image} boxSize="40px" alt={coin.name} />
-             <VStack align="start" spacing={-1}>
-               <Text fontSize="3xl" fontWeight="bold">
-                  ${coin.current_price.toLocaleString()}
-               </Text>
-             </VStack>
-          </HStack>
+        <HStack align="center" spacing={3}>
+           <Image src={coin.image} boxSize="40px" alt={coin.name} />
+           <VStack align="start" spacing={-1}>
+             <PriceFlash price={coin.current_price} fontSize="3xl" fontWeight="bold" />
+           </VStack>
+        </HStack>
           
           <IconButton 
             aria-label="Add to Watchlist" 

@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const ids = searchParams.get('ids');
+  
   try {
-    const res = await fetch('http://142.93.171.76:8000/api/coins', {
-      cache: 'no-store' // Всегда свежие данные
-    });
+    const backendUrl = ids 
+      ? `http://142.93.171.76:8000/api/coins?ids=${ids}`
+      : 'http://142.93.171.76:8000/api/coins';
+
+    const res = await fetch(backendUrl, {
+      cache: 'no-store',
     
     if (!res.ok) {
       throw new Error(`Backend responded with ${res.status}`);
