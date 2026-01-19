@@ -70,8 +70,9 @@ class TechnicalAnalysisService:
                     "trend": "Bullish" if last_price > ema50 else "Bearish"
                 })
                 
-        except Exception:
-            pass
+        except Exception as e:
+            # Ошибки часто бывают (нет пары, делистинг), но сейчас нам важно видеть почему
+            logger.error(f"Failed to analyze {symbol}: {e}")
 
     async def close(self):
         await self.exchange.close()
