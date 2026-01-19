@@ -10,6 +10,7 @@ import { use } from 'react';
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 import { useWatchlistStore } from '@/store/useWatchlistStore';
 import { useHaptic } from '@/hooks/useHaptic';
+import { useCoins } from '@/hooks/useCoins';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   useTelegramBackButton();
   const { impact, notification } = useHaptic();
   const { toggleCoin, favorites } = useWatchlistStore();
+  const { data: coins } = useCoins();
   
   // Check if favorite (simple check, for strict hydration safety we might use a useEffect wrapper, but this is fine for MVP)
   const isFav = favorites.includes(id);
@@ -33,14 +35,14 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
   
-  // Find coin (in real app, useQuery)
-  const coin = MOCK_COINS.find(c => c.id === id);
+  // Find coin in loaded data (or mock data provided by hook)
+  const coin = coins?.find(c => c.id === id);
 
   const isPositive = (coin?.price_change_percentage_24h || 0) >= 0;
 
   if (!coin) {
     return (
-      <Box p={4}>
+      <Box p={4} pt="calc(10px + env(safe-area-inset-top))">
         <Text>Coin not found</Text>
       </Box>
     );

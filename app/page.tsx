@@ -2,32 +2,37 @@
 
 import { Box, Flex, Heading, IconButton, Input, InputGroup, InputLeftElement, VStack, Text } from "@chakra-ui/react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { MOCK_COINS } from "@/lib/mockData";
 import { CoinItem } from "@/components/screener/CoinItem";
 import { CoinSkeleton } from "@/components/screener/CoinSkeleton";
 import { useState, useMemo, useEffect } from "react";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useFilterStore } from "@/store/filterStore";
 import Link from "next/link";
+import { useCoins } from "@/hooks/useCoins";
 
 export default function ScreenerPage() {
   const { impact } = useHaptic();
+  const { data: coins, isLoading: isQueryLoading } = useCoins();
   
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
   // Use global filter store
   const { filters, setFilters, activeFilterCount } = useFilterStore();
 
-  // Simulate initial fetch
+  // Simulate initial UI fetch delay for smooth skeleton transition
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsLoading(false);
+      setIsInitialLoading(false);
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
+  const isLoading = isInitialLoading || isQueryLoading;
+
   const filteredCoins = useMemo(() => {
-    return MOCK_COINS.filter(coin => {
+    if (!coins) return [];
+    
+    return coins.filter(coin => {
       // 1. Search
       const matchesSearch = 
         coin.name.toLowerCase().includes(filters.search.toLowerCase()) || 
@@ -52,7 +57,7 @@ export default function ScreenerPage() {
 
       return true;
     });
-  }, [filters]);
+  }, [filters, coins]);
 
   const activeCount = activeFilterCount();
 

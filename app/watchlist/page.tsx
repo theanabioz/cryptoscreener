@@ -2,12 +2,13 @@
 
 import { Box, Heading, Text, Center, VStack } from '@chakra-ui/react'
 import { useWatchlistStore } from '@/store/useWatchlistStore'
-import { MOCK_COINS } from '@/lib/mockData'
 import { CoinItem } from '@/components/screener/CoinItem'
 import { useEffect, useState } from 'react'
+import { useCoins } from '@/hooks/useCoins'
 
 export default function WatchlistPage() {
   const { favorites } = useWatchlistStore();
+  const { data: coins } = useCoins();
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Prevent hydration mismatch
@@ -19,7 +20,7 @@ export default function WatchlistPage() {
     return <Box p={4}><Heading size="md">Watchlist</Heading></Box>; // Loading state
   }
 
-  const watchlistCoins = MOCK_COINS.filter(c => favorites.includes(c.id));
+  const watchlistCoins = coins ? coins.filter(c => favorites.includes(c.id)) : [];
 
   return (
     <Box>
