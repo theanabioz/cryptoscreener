@@ -33,26 +33,45 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <Box pb="100px">
       {/* Header */}
-      <Flex p={4} pt="calc(10px + env(safe-area-inset-top))" align="center" justify="space-between" bg="gray.900">
-        <Heading size="sm" ml={2}>{coin.name}</Heading>
-        <IconButton 
-          aria-label="Add to Watchlist" 
-          icon={<Star size={24} />} 
-          variant="ghost" 
-          color="gray.400"
-        />
-      </Flex>
+      <Box 
+        position="sticky" 
+        top={0} 
+        zIndex={10} 
+        bg="gray.900" 
+        borderBottomWidth="1px" 
+        borderColor="gray.800"
+        pt="calc(10px + env(safe-area-inset-top))"
+        pb={3}
+        px={4}
+      >
+        <Flex justify="center" align="center" position="relative" h="40px">
+          {/* Back button space placeholder if needed, but native button handles navigation. 
+              We just center the title. */}
+          <Heading size="md">{coin.name}</Heading>
+        </Flex>
+      </Box>
 
       {/* Main Price Info */}
       <VStack p={4} align="start" spacing={1}>
-        <HStack align="center" spacing={3}>
-           <Image src={coin.image} boxSize="40px" alt={coin.name} />
-           <VStack align="start" spacing={-1}>
-             <Text fontSize="3xl" fontWeight="bold">
-                ${coin.current_price.toLocaleString()}
-             </Text>
-           </VStack>
-        </HStack>
+        <Flex w="full" justify="space-between" align="center">
+          <HStack align="center" spacing={3}>
+             <Image src={coin.image} boxSize="40px" alt={coin.name} />
+             <VStack align="start" spacing={-1}>
+               <Text fontSize="3xl" fontWeight="bold">
+                  ${coin.current_price.toLocaleString()}
+               </Text>
+             </VStack>
+          </HStack>
+          
+          <IconButton 
+            aria-label="Add to Watchlist" 
+            icon={<Star size={24} />} 
+            variant="ghost" 
+            color="gray.400"
+            size="lg"
+            _hover={{ bg: 'gray.800' }}
+          />
+        </Flex>
         
         <Badge 
           colorScheme={isPositive ? 'green' : 'red'} 
