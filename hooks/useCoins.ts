@@ -15,9 +15,7 @@ export const useCoins = () => {
   return useQuery({
     queryKey: ['coins'],
     queryFn: fetchCoins,
-    staleTime: 1000 * 60, // 1 minute cache
-    retry: 1,
-    // Fallback to MOCK data if API fails (for demo purposes)
-    initialData: MOCK_COINS 
+    staleTime: 1000 * 30, // 30 seconds cache
+    retry: 2,
   });
 };

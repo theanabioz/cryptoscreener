@@ -78,6 +78,7 @@ export default function ScreenerPage() {
         {/* Centered Title */}
         <Flex justify="center" align="center" h="40px" mb={2}>
           <Heading size="md">Market</Heading>
+          <Box ml={2} w={2} h={2} borderRadius="full" bg="green.400" boxShadow="0 0 8px var(--chakra-colors-green-400)" />
         </Flex>
         
         {/* Search + Filter Row */}
