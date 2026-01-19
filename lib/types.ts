@@ -7,6 +7,9 @@ export interface Coin {
   market_cap: number;
   total_volume: number;
   rsi?: number;
+  macd?: number;
+  ema50?: number;
+  bb_pos?: string;
   trend?: string;
   sparkline_in_7d?: {
     price: number[];
