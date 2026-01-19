@@ -4,7 +4,8 @@ import { MOCK_COINS } from '@/lib/mockData';
 
 const fetchCoins = async (): Promise<Coin[]> => {
   // Use our internal Next.js API route which acts as a secure proxy to the Python backend
-  const res = await fetch('/api/coins');
+  // Add timestamp to prevent caching
+  const res = await fetch(`/api/coins?ts=${new Date().getTime()}`);
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }

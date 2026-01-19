@@ -11,7 +11,14 @@ export async function GET() {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error("Proxy Error:", error);
     return NextResponse.json({ error: "Failed to fetch coins" }, { status: 500 });
