@@ -16,6 +16,7 @@ const TIMEFRAMES = ['1H', '4H', '1D', '1W'];
 
 export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [activeTf, setActiveTf] = useState('1H');
 
   // Convert UI timeframe to Binance format
@@ -56,6 +57,8 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailCha
     });
     
     candlestickSeries.setData(klines as any);
+    seriesRef.current = candlestickSeries;
+    
     chart.timeScale().fitContent();
 
     const handleResize = () => {
@@ -71,6 +74,20 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailCha
       chart.remove();
     };
   }, [klines, activeTf]); // Re-run when data or timeframe changes
+
+  // Real-time chart update
+  useEffect(() => {
+    if (seriesRef.current && klines && klines.length > 0 && basePrice) {
+      const lastCandle = klines[klines.length - 1];
+      const updatedCandle = {
+        ...lastCandle,
+        close: basePrice,
+        high: Math.max(lastCandle.high, basePrice),
+        low: Math.min(lastCandle.low, basePrice),
+      };
+      seriesRef.current.update(updatedCandle as any);
+    }
+  }, [basePrice, klines]);
 
   return (
     <Box w="full">
