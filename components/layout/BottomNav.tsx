@@ -4,6 +4,7 @@ import { Box, Flex, Text, VStack, useColorModeValue } from '@chakra-ui/react'
 import { LayoutList, Star, Bell, User } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useHaptic } from '@/hooks/useHaptic'
 
 const NAV_ITEMS = [
   { label: 'Screener', icon: LayoutList, href: '/' },
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
 
 export const BottomNav = () => {
   const pathname = usePathname()
+  const { impact } = useHaptic()
   
   const bg = useColorModeValue('white', 'gray.900')
   const borderColor = useColorModeValue('gray.200', 'gray.800')
@@ -38,7 +40,12 @@ export const BottomNav = () => {
           const Icon = item.icon
           
           return (
-            <Link key={item.label} href={item.href} style={{ textDecoration: 'none' }}>
+            <Link 
+              key={item.label} 
+              href={item.href} 
+              style={{ textDecoration: 'none' }}
+              onClick={() => impact('light')}
+            >
               <VStack spacing={0.5} w="60px" cursor="pointer" justify="center">
                 <Icon 
                   size={24} 

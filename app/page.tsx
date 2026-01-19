@@ -4,12 +4,18 @@ import { Box, Flex, Heading, IconButton, Input, InputGroup, InputLeftElement, VS
 import { Search, SlidersHorizontal } from "lucide-react";
 import { MOCK_COINS } from "@/lib/mockData";
 import { CoinItem } from "@/components/screener/CoinItem";
+import { CoinSkeleton } from "@/components/screener/CoinSkeleton";
 import { FilterDrawer } from "@/components/screener/FilterDrawer";
-import { useState, useMemo } from "react";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { useState, useMemo, useEffect } from "react";
 import { ScreenerFilter } from "@/lib/types";
+import { useHaptic } from "@/hooks/useHaptic";
 
 export default function ScreenerPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { impact } = useHaptic();
+  
+  const [isLoading, setIsLoading] = useState(true);
   
   const [filters, setFilters] = useState<ScreenerFilter>({
     search: "",
@@ -18,6 +24,19 @@ export default function ScreenerPage() {
     marketCap: "all",
     priceChange: "all"
   });
+
+  // Simulate initial fetch
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleRefresh = async () => {
+    // In real app: await refetch();
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  };
 
   const filteredCoins = useMemo(() => {
     return MOCK_COINS.filter(coin => {
@@ -56,6 +75,11 @@ export default function ScreenerPage() {
     return count;
   }, [filters]);
 
+  const handleOpenFilters = () => {
+    impact('medium');
+    onOpen();
+  };
+
   return (
     <Box>
       {/* Header & Search */}
@@ -79,7 +103,7 @@ export default function ScreenerPage() {
               variant={activeFilterCount > 0 ? "solid" : "ghost"}
               colorScheme={activeFilterCount > 0 ? "teal" : "gray"}
               size="sm"
-              onClick={onOpen}
+              onClick={handleOpenFilters}
             />
             {activeFilterCount > 0 && (
               <Box 
@@ -112,18 +136,26 @@ export default function ScreenerPage() {
         </InputGroup>
       </Box>
 
-      {/* Coins List */}
-      <VStack spacing={0} align="stretch" pb="20px">
-        {filteredCoins.length > 0 ? (
-          filteredCoins.map(coin => (
-            <CoinItem key={coin.id} coin={coin} />
-          ))
-        ) : (
-          <Box p={8} textAlign="center">
-            <Text color="gray.500">No coins found matching filters.</Text>
-          </Box>
-        )}
-      </VStack>
+      {/* Coins List with Pull to Refresh */}
+      <PullToRefresh onRefresh={handleRefresh}>
+        <VStack spacing={0} align="stretch" pb="20px" minH="calc(100vh - 140px)">
+          {isLoading ? (
+            Array.from({ length: 10 }).map((_, i) => (
+              <CoinSkeleton key={i} />
+            ))
+          ) : (
+            filteredCoins.length > 0 ? (
+              filteredCoins.map(coin => (
+                <CoinItem key={coin.id} coin={coin} />
+              ))
+            ) : (
+              <Box p={8} textAlign="center">
+                <Text color="gray.500">No coins found matching filters.</Text>
+              </Box>
+            )
+          )}
+        </VStack>
+      </PullToRefresh>
 
       <FilterDrawer 
         isOpen={isOpen} 

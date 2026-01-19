@@ -5,6 +5,7 @@ import { Coin } from '@/lib/types'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { Sparkline } from '../ui/Sparkline'
 import Link from 'next/link'
+import { useHaptic } from '@/hooks/useHaptic'
 
 interface CoinItemProps {
   coin: Coin;
@@ -14,9 +15,15 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
   const isPositive = coin.price_change_percentage_24h >= 0;
   const trendColor = isPositive ? 'green.400' : 'red.400';
   const badgeColor = isPositive ? 'green' : 'red';
+  
+  const { impact } = useHaptic();
 
   return (
-    <Link href={`/coin/${coin.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link 
+      href={`/coin/${coin.id}`} 
+      style={{ textDecoration: 'none', display: 'block' }}
+      onClick={() => impact('light')}
+    >
       <Box 
         w="full" 
         p={3} 
