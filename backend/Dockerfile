@@ -10,6 +10,7 @@ WORKDIR /app
 # Устанавливаем системные зависимости (если нужны для сборки pandas/numpy)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируем requirements и устанавливаем зависимости
