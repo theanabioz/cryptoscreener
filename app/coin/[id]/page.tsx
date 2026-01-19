@@ -8,14 +8,30 @@ import { DetailChart } from '@/components/chart/DetailChart';
 import { TechnicalIndicators } from '@/components/chart/TechnicalIndicators';
 import { use } from 'react';
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
+import { useWatchlistStore } from '@/store/useWatchlistStore';
+import { useHaptic } from '@/hooks/useHaptic';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   
-  // Enable Native Telegram Back Button
+  // Hooks
   useTelegramBackButton();
+  const { impact, notification } = useHaptic();
+  const { toggleCoin, favorites } = useWatchlistStore();
+  
+  // Check if favorite (simple check, for strict hydration safety we might use a useEffect wrapper, but this is fine for MVP)
+  const isFav = favorites.includes(id);
+
+  const handleToggleFavorite = () => {
+    toggleCoin(id);
+    if (!isFav) {
+      notification('success');
+    } else {
+      impact('light');
+    }
+  };
   
   // Find coin (in real app, useQuery)
   const coin = MOCK_COINS.find(c => c.id === id);
@@ -65,11 +81,12 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           
           <IconButton 
             aria-label="Add to Watchlist" 
-            icon={<Star size={24} />} 
+            icon={<Star size={24} fill={isFav ? "currentColor" : "none"} />} 
             variant="ghost" 
-            color="gray.400"
+            color={isFav ? "yellow.400" : "gray.400"}
             size="lg"
             _hover={{ bg: 'gray.800' }}
+            onClick={handleToggleFavorite}
           />
         </Flex>
         
