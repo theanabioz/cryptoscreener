@@ -7,6 +7,7 @@ export const useTelegramBackButton = () => {
   const router = useRouter();
 
   useEffect(() => {
+    // Check for window existence and Telegram object
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       const backButton = tg.BackButton;
@@ -15,12 +16,16 @@ export const useTelegramBackButton = () => {
         router.back();
       };
 
-      backButton.show();
-      backButton.onClick(handleBack);
+      if (backButton) {
+        backButton.show();
+        backButton.onClick(handleBack);
+      }
 
       return () => {
-        backButton.hide();
-        backButton.offClick(handleBack);
+        if (backButton) {
+          backButton.hide();
+          backButton.offClick(handleBack);
+        }
       };
     }
   }, [router]);
