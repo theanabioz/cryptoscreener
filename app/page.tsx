@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { MOCK_COINS } from "@/lib/mockData";
 import { CoinItem } from "@/components/screener/CoinItem";
 import { CoinSkeleton } from "@/components/screener/CoinSkeleton";
-import { FilterDrawer } from "@/components/screener/FilterDrawer";
+import { FilterModal } from "@/components/screener/FilterModal";
 import { useState, useMemo, useEffect } from "react";
 import { ScreenerFilter } from "@/lib/types";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -157,7 +157,7 @@ export default function ScreenerPage() {
         )}
       </VStack>
 
-      <FilterDrawer 
+      <FilterModal 
         isOpen={isOpen} 
         onClose={onClose} 
         currentFilters={filters}

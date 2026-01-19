@@ -1,38 +1,35 @@
 'use client'
 
 import { 
-  Drawer, 
-  DrawerBody, 
-  DrawerFooter, 
-  DrawerHeader, 
-  DrawerOverlay, 
-  DrawerContent, 
-  DrawerCloseButton,
+  Modal, 
+  ModalOverlay, 
+  ModalContent, 
+  ModalHeader, 
+  ModalFooter, 
+  ModalBody, 
+  ModalCloseButton,
   Button,
   VStack,
   Text,
   HStack,
   Input,
-  InputGroup,
-  InputLeftElement,
   SimpleGrid,
-  useColorModeValue
+  useColorModeValue,
+  Box
 } from '@chakra-ui/react'
 import { ScreenerFilter, MarketCapFilter, PriceChangeFilter } from '@/lib/types'
 import { useState, useEffect } from 'react'
 
-interface FilterDrawerProps {
+interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentFilters: ScreenerFilter;
   onApply: (filters: ScreenerFilter) => void;
 }
 
-export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: FilterDrawerProps) => {
-  // Local state for the drawer (don't apply until user clicks Apply)
+export const FilterModal = ({ isOpen, onClose, currentFilters, onApply }: FilterModalProps) => {
   const [localFilters, setLocalFilters] = useState<ScreenerFilter>(currentFilters);
 
-  // Sync local state when drawer opens with current applied filters
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(currentFilters);
@@ -46,7 +43,7 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
 
   const handleReset = () => {
     const resetState: ScreenerFilter = {
-      search: currentFilters.search, // Keep search
+      search: currentFilters.search, 
       minPrice: '',
       maxPrice: '',
       marketCap: 'all',
@@ -55,63 +52,55 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
     setLocalFilters(resetState);
   };
 
-  const bgButton = useColorModeValue('gray.100', 'gray.700');
-  const bgActive = 'brand.500';
-  const textActive = 'white';
-
   const MCapButton = ({ label, value }: { label: string, value: MarketCapFilter }) => (
     <Button 
       size="sm" 
       variant={localFilters.marketCap === value ? 'solid' : 'outline'}
       colorScheme={localFilters.marketCap === value ? 'teal' : 'gray'}
       onClick={() => setLocalFilters({...localFilters, marketCap: value})}
+      whiteSpace="normal"
+      h="auto"
+      py={2}
+      fontSize="xs"
     >
       {label}
     </Button>
   );
 
   return (
-    <Drawer 
+    <Modal 
       isOpen={isOpen} 
-      placement="bottom" 
-      onClose={onClose}
-      variant="always-open" // Prevent some default layout shifts
+      onClose={onClose} 
+      isCentered 
+      size="xs" // Mobile friendly size
+      motionPreset="scale" // Fade in scale animation
+      scrollBehavior="inside" // Allows scrolling inside modal if keyboard covers it
     >
-      <DrawerOverlay 
-        backdropFilter="blur(4px)" 
-        transition="all 0.4s ease-in-out" 
-      />
-      <DrawerContent 
-        borderTopRadius="24px"
-        bg="gray.900"
-        maxH="85vh" // Ensure it doesn't cover whole screen
-        // Custom animation props for framer-motion
-        transition="transform 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
+      <ModalOverlay backdropFilter="blur(4px)" />
+      <ModalContent 
+        mx={4} 
+        borderRadius="xl"
+        bg="gray.900" 
+        borderWidth="1px" 
+        borderColor="gray.700"
       >
-        <Box 
-          w="40px" 
-          h="1.5" 
-          bg="gray.700" 
-          borderRadius="full" 
-          mx="auto" 
-          mt={3} 
-          mb={1} 
-        />
-        <DrawerCloseButton mt={2} />
-        <DrawerHeader textAlign="center" borderBottomWidth="0px">Filters</DrawerHeader>
-
-        <DrawerBody pt={2} pb={8}>
+        <ModalHeader borderBottomWidth="1px" borderColor="gray.800">Filters</ModalHeader>
+        <ModalCloseButton />
+        
+        <ModalBody py={6}>
           <VStack spacing={6} align="stretch">
             
             {/* Price Range */}
             <Box>
-              <Text fontSize="sm" fontWeight="bold" mb={2}>Price ($)</Text>
+              <Text fontSize="sm" fontWeight="bold" mb={2} color="gray.300">Price ($)</Text>
               <HStack>
                 <Input 
                   placeholder="Min" 
                   type="number" 
                   value={localFilters.minPrice}
                   onChange={(e) => setLocalFilters({...localFilters, minPrice: e.target.value})}
+                  bg="gray.800"
+                  borderColor="gray.600"
                 />
                 <Text>-</Text>
                 <Input 
@@ -119,24 +108,26 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
                   type="number" 
                   value={localFilters.maxPrice}
                   onChange={(e) => setLocalFilters({...localFilters, maxPrice: e.target.value})}
+                  bg="gray.800"
+                  borderColor="gray.600"
                 />
               </HStack>
             </Box>
 
             {/* Market Cap */}
             <Box>
-              <Text fontSize="sm" fontWeight="bold" mb={2}>Market Cap</Text>
+              <Text fontSize="sm" fontWeight="bold" mb={2} color="gray.300">Market Cap</Text>
               <SimpleGrid columns={2} spacing={2}>
                 <MCapButton label="All" value="all" />
-                <MCapButton label="High (> $1B)" value="high" />
-                <MCapButton label="Mid ($100M - 1B)" value="mid" />
-                <MCapButton label="Low (< $100M)" value="low" />
+                <MCapButton label="High (>1B)" value="high" />
+                <MCapButton label="Mid (100M-1B)" value="mid" />
+                <MCapButton label="Low (<100M)" value="low" />
               </SimpleGrid>
             </Box>
 
             {/* 24h Change */}
             <Box>
-              <Text fontSize="sm" fontWeight="bold" mb={2}>24h Change</Text>
+              <Text fontSize="sm" fontWeight="bold" mb={2} color="gray.300">24h Change</Text>
               <HStack spacing={2} width="full">
                 {['all', 'gainers', 'losers'].map((type) => (
                    <Button
@@ -146,6 +137,7 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
                     variant={localFilters.priceChange === type ? 'solid' : 'outline'}
                     colorScheme={localFilters.priceChange === type ? 'teal' : 'gray'}
                     onClick={() => setLocalFilters({...localFilters, priceChange: type as PriceChangeFilter})}
+                    borderColor="gray.600"
                    >
                      {type.charAt(0).toUpperCase() + type.slice(1)}
                    </Button>
@@ -154,19 +146,17 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
             </Box>
 
           </VStack>
-        </DrawerBody>
+        </ModalBody>
 
-        <DrawerFooter borderTopWidth="1px">
-          <Button variant="outline" mr={3} onClick={handleReset}>
+        <ModalFooter borderTopWidth="1px" borderColor="gray.800">
+          <Button variant="ghost" mr={3} onClick={handleReset} color="gray.400">
             Reset
           </Button>
-          <Button colorScheme="teal" onClick={handleApply} width="full">
+          <Button colorScheme="teal" onClick={handleApply}>
             Apply Filters
           </Button>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   )
 }
-
-import { Box } from '@chakra-ui/react';
