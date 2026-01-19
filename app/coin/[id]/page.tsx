@@ -1,0 +1,109 @@
+'use client'
+
+import { Box, Flex, IconButton, Text, Heading, VStack, HStack, Image, Badge, SimpleGrid, Stat, StatLabel, StatNumber } from '@chakra-ui/react';
+import { ChevronLeft, TrendingUp, TrendingDown, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MOCK_COINS } from '@/lib/mockData';
+import { DetailChart } from '@/components/chart/DetailChart';
+import { use } from 'react';
+
+export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
+  
+  // Find coin (in real app, useQuery)
+  const coin = MOCK_COINS.find(c => c.id === id);
+
+  const isPositive = (coin?.price_change_percentage_24h || 0) >= 0;
+
+  if (!coin) {
+    return (
+      <Box p={4}>
+        <Text>Coin not found</Text>
+        <IconButton aria-label="Back" icon={<ChevronLeft />} onClick={() => router.back()} />
+      </Box>
+    );
+  }
+
+  return (
+    <Box pb="100px">
+      {/* Header */}
+      <Flex p={4} align="center" justify="space-between" bg="gray.900">
+        <IconButton 
+          aria-label="Back" 
+          icon={<ChevronLeft size={24} />} 
+          variant="ghost" 
+          onClick={() => router.back()} 
+        />
+        <Heading size="sm">{coin.name}</Heading>
+        <IconButton 
+          aria-label="Add to Watchlist" 
+          icon={<Star size={24} />} 
+          variant="ghost" 
+          color="gray.400"
+        />
+      </Flex>
+
+      {/* Main Price Info */}
+      <VStack p={4} align="start" spacing={1}>
+        <HStack align="center" spacing={3}>
+           <Image src={coin.image} boxSize="40px" alt={coin.name} />
+           <VStack align="start" spacing={-1}>
+             <Text fontSize="3xl" fontWeight="bold">
+                ${coin.current_price.toLocaleString()}
+             </Text>
+           </VStack>
+        </HStack>
+        
+        <Badge 
+          colorScheme={isPositive ? 'green' : 'red'} 
+          variant="solid" 
+          fontSize="md"
+          borderRadius="md"
+          px={2}
+          display="flex"
+          alignItems="center"
+        >
+          {isPositive ? <TrendingUp size={16} style={{marginRight: '4px'}}/> : <TrendingDown size={16} style={{marginRight: '4px'}}/>}
+          {Math.abs(coin.price_change_percentage_24h).toFixed(2)}% (24h)
+        </Badge>
+      </VStack>
+
+      {/* Chart */}
+      <Box w="full" h="300px" my={4}>
+        <DetailChart coinId={coin.id} basePrice={coin.current_price} isPositive={isPositive} />
+      </Box>
+
+      {/* Stats Grid */}
+      <SimpleGrid columns={2} spacing={4} px={4}>
+        <Stat bg="gray.800" p={3} borderRadius="lg">
+          <StatLabel color="gray.400">Market Cap</StatLabel>
+          <StatNumber fontSize="md">${(coin.market_cap / 1e9).toFixed(2)}B</StatNumber>
+        </Stat>
+        <Stat bg="gray.800" p={3} borderRadius="lg">
+          <StatLabel color="gray.400">Volume (24h)</StatLabel>
+          <StatNumber fontSize="md">${(coin.total_volume / 1e6).toFixed(2)}M</StatNumber>
+        </Stat>
+        <Stat bg="gray.800" p={3} borderRadius="lg">
+          <StatLabel color="gray.400">High (24h)</StatLabel>
+          <StatNumber fontSize="md">${(coin.current_price * 1.05).toFixed(2)}</StatNumber>
+        </Stat>
+        <Stat bg="gray.800" p={3} borderRadius="lg">
+          <StatLabel color="gray.400">Low (24h)</StatLabel>
+          <StatNumber fontSize="md">${(coin.current_price * 0.95).toFixed(2)}</StatNumber>
+        </Stat>
+      </SimpleGrid>
+      
+      {/* Description / About */}
+      <Box p={4} mt={4}>
+        <Heading size="sm" mb={2}>About {coin.name}</Heading>
+        <Text fontSize="sm" color="gray.400">
+          {coin.name} is a cryptocurrency operating on the blockchain. 
+          Current supply is {Math.floor(Math.random() * 10000000).toLocaleString()} {coin.symbol.toUpperCase()}.
+        </Text>
+      </Box>
+
+    </Box>
+  );
+}
