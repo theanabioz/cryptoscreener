@@ -6,7 +6,6 @@ import { MOCK_COINS } from "@/lib/mockData";
 import { CoinItem } from "@/components/screener/CoinItem";
 import { CoinSkeleton } from "@/components/screener/CoinSkeleton";
 import { FilterDrawer } from "@/components/screener/FilterDrawer";
-import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { useState, useMemo, useEffect } from "react";
 import { ScreenerFilter } from "@/lib/types";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -32,11 +31,6 @@ export default function ScreenerPage() {
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
-
-  const handleRefresh = async () => {
-    // In real app: await refetch();
-    await new Promise(resolve => setTimeout(resolve, 1500));
-  };
 
   const filteredCoins = useMemo(() => {
     return MOCK_COINS.filter(coin => {
@@ -136,26 +130,24 @@ export default function ScreenerPage() {
         </InputGroup>
       </Box>
 
-      {/* Coins List with Pull to Refresh */}
-      <PullToRefresh onRefresh={handleRefresh}>
-        <VStack spacing={0} align="stretch" pb="20px" minH="calc(100vh - 140px)">
-          {isLoading ? (
-            Array.from({ length: 10 }).map((_, i) => (
-              <CoinSkeleton key={i} />
+      {/* Coins List */}
+      <VStack spacing={0} align="stretch" pb="20px">
+        {isLoading ? (
+          Array.from({ length: 10 }).map((_, i) => (
+            <CoinSkeleton key={i} />
+          ))
+        ) : (
+          filteredCoins.length > 0 ? (
+            filteredCoins.map(coin => (
+              <CoinItem key={coin.id} coin={coin} />
             ))
           ) : (
-            filteredCoins.length > 0 ? (
-              filteredCoins.map(coin => (
-                <CoinItem key={coin.id} coin={coin} />
-              ))
-            ) : (
-              <Box p={8} textAlign="center">
-                <Text color="gray.500">No coins found matching filters.</Text>
-              </Box>
-            )
-          )}
-        </VStack>
-      </PullToRefresh>
+            <Box p={8} textAlign="center">
+              <Text color="gray.500">No coins found matching filters.</Text>
+            </Box>
+          )
+        )}
+      </VStack>
 
       <FilterDrawer 
         isOpen={isOpen} 
