@@ -1,13 +1,8 @@
 version: '3.8'
 
 services:
-  api:
-    build: .
-    container_name: crypto_screener_backend
-    ports:
-      - "8000:8000"
+  collector:
+    build: ./collector
     volumes:
-      - ./app:/app/app # Hot reload при разработке (если запускать с флагом reload)
-    restart: always
-    environment:
-      - PORT=8000
+      - ./data:/data  # Сохраняем данные на хост машину
+    restart: "no" # Завершится, когда скачает всё
