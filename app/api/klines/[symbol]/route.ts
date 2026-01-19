@@ -7,7 +7,7 @@ export async function GET(
   const symbol = (await params).symbol;
   const searchParams = request.nextUrl.searchParams;
   const interval = searchParams.get('interval') || '1h';
-  const limit = searchParams.get('limit') || '100';
+  const limit = searchParams.get('limit') || '500';
 
   const backendUrl = `http://142.93.171.76:8000/api/klines/${symbol}?interval=${interval}&limit=${limit}`;
   console.log(`Fetching klines from: ${backendUrl}`);

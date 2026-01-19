@@ -9,7 +9,7 @@ export interface Kline {
 }
 
 const fetchKlines = async (symbol: string, interval: string): Promise<Kline[]> => {
-  const res = await fetch(`/api/klines/${symbol}?interval=${interval}&limit=200`);
+  const res = await fetch(`/api/klines/${symbol}?interval=${interval}&limit=500`);
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }

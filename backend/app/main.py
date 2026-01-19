@@ -33,7 +33,7 @@ app.add_middleware(
 )
 
 @app.get("/api/klines/{symbol}")
-async def get_klines(symbol: str, interval: str = '1h', limit: int = 100):
+async def get_klines(symbol: str, interval: str = '1h', limit: int = 500):
     exchange = ccxt.binance()
     try:
         # Приводим символ к формату Binance (BTCUSDT)
