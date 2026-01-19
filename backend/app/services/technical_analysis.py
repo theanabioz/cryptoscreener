@@ -60,13 +60,33 @@ class TechnicalAnalysisService:
             market_manager.candles[symbol] = df
 
             # Первичный расчет индикаторов
+            # 1. RSI (14)
             rsi = ta.momentum.RSIIndicator(close=df['close'], window=14).rsi().iloc[-1]
+            
+            # 2. MACD (12, 26, 9)
+            macd_obj = ta.trend.MACD(close=df['close'])
+            macd = macd_obj.macd().iloc[-1]
+            macd_signal = macd_obj.macd_signal().iloc[-1]
+            
+            # 3. EMA (50)
             ema50 = ta.trend.EMAIndicator(close=df['close'], window=50).ema_indicator().iloc[-1]
+            
+            # 4. Bollinger Bands (20, 2)
+            bb = ta.volatility.BollingerBands(close=df['close'], window=20, window_dev=2)
+            # Определяем позицию цены относительно полос (Low/Mid/High)
+            bb_pos = "Mid"
+            if df['close'].iloc[-1] > bb.bollinger_hband().iloc[-1]: bb_pos = "High"
+            elif df['close'].iloc[-1] < bb.bollinger_lband().iloc[-1]: bb_pos = "Low"
+
             last_price = df['close'].iloc[-1]
 
             if symbol in market_manager.prices:
                 market_manager.prices[symbol].update({
                     "rsi": round(rsi, 2) if not pd.isna(rsi) else None,
+                    "macd": round(macd, 4) if not pd.isna(macd) else None,
+                    "macd_signal": round(macd_signal, 4) if not pd.isna(macd_signal) else None,
+                    "ema50": round(ema50, 2) if not pd.isna(ema50) else None,
+                    "bb_pos": bb_pos,
                     "trend": "Bullish" if last_price > ema50 else "Bearish"
                 })
                 

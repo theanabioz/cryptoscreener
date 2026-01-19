@@ -50,6 +50,9 @@ async def get_coins(limit: int = 50):
             "total_volume": t['volume'],
             # Новые поля TA
             "rsi": t.get('rsi'),
+            "macd": t.get('macd'),
+            "ema50": t.get('ema50'),
+            "bb_pos": t.get('bb_pos'),
             "trend": t.get('trend'),
             "image": f"https://assets.coincap.io/assets/icons/{t['symbol'].replace('USDT', '').lower()}@2x.png"
         })
