@@ -1,5 +1,6 @@
 import tvscreener as tv
 import pandas as pd
+import math
 
 class ScreenerService:
     def get_crypto_screener(self, limit: int = 50):
@@ -25,16 +26,24 @@ class ScreenerService:
         normalized = []
         for item in raw_data:
             try:
+                # Helper для очистки числовых значений (NaN/Inf -> 0)
+                def clean_float(val):
+                    try:
+                        f_val = float(val)
+                        if math.isnan(f_val) or math.isinf(f_val):
+                            return 0
+                        return f_val
+                    except:
+                        return 0
+
                 # Helper для поиска значения по ключу без учета регистра
                 def get_val(keys_list):
                     for k in keys_list:
-                        # Ищем точное совпадение
                         if k in item: return item[k]
-                        # Ищем совпадение lowercase
                         for item_key in item.keys():
                             if item_key.lower() == k.lower():
                                 return item[item_key]
-                    return 0
+                    return None
 
                 # Достаем данные используя известные ключи из логов
                 symbol_raw = get_val(['Symbol', 'symbol']) or 'Unknown'
@@ -48,26 +57,15 @@ class ScreenerService:
                 # Удаляем USDT для ID
                 coin_id = ticker.replace('USDT', '').lower()
                 
-                # Цена: ищем Close, если нет - Ask, если нет - 0
-                price = get_val(['close', 'Close', 'Ask', 'last'])
-                
-                # Изменение: ищем Change %
-                change = get_val(['Change %', 'change', 'Change'])
-                
-                # Капитализация
-                mcap = get_val(['market_cap_basic', 'Market Cap', 'Fully Diluted Market Cap'])
-                
-                # Объем
-                vol = get_val(['volume', 'Volume', 'Average Volume (10 day)'])
-
+                # Собираем монету с очисткой чисел
                 coin = {
                     "id": coin_id,
                     "symbol": ticker,
                     "name": get_val(['Description', 'description', 'name']) or ticker, 
-                    "current_price": float(price) if price else 0,
-                    "price_change_percentage_24h": float(change) if change else 0,
-                    "market_cap": float(mcap) if mcap else 0,
-                    "total_volume": float(vol) if vol else 0,
+                    "current_price": clean_float(get_val(['close', 'Close', 'Ask', 'last', 'Price'])),
+                    "price_change_percentage_24h": clean_float(get_val(['Change %', 'change', 'Change'])),
+                    "market_cap": clean_float(get_val(['market_cap_basic', 'Market Cap', 'Fully Diluted Market Cap'])),
+                    "total_volume": clean_float(get_val(['volume', 'Volume', 'Average Volume (10 day)'])),
                     "image": f"https://s2.coinmarketcap.com/static/img/coins/64x64/1.png"
                 }
                 normalized.append(coin)
