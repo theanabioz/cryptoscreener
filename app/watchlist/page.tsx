@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Heading, Text, Center, VStack } from '@chakra-ui/react'
+import { Box, Heading, Text, Center, VStack, Spinner } from '@chakra-ui/react'
 import { useWatchlistStore } from '@/store/useWatchlistStore'
 import { CoinItem } from '@/components/screener/CoinItem'
 import { useEffect, useState } from 'react'
