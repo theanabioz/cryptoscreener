@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Box } from "@chakra-ui/react";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script 
+          src="https://telegram.org/js/telegram-web-app.js" 
+          strategy="beforeInteractive" 
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
           <Box minH="100vh" pb="80px">
