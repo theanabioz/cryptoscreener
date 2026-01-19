@@ -50,17 +50,17 @@ class TechnicalAnalysisService:
 
     async def analyze_coin(self, symbol: str):
         try:
-            # Считаем индикаторы для разных таймфреймов
-            # Для MVP оставим 1h как основной, но подготовим структуру
+            # Скачиваем свечи (1h таймфрейм, 100 штук)
             ohlcv = await self.exchange.fetch_ohlcv(symbol, timeframe='1h', limit=100)
             if not ohlcv: return
 
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             
-            # RSI (14)
+            # Сохраняем историю свечей в менеджер для Real-time обновлений
+            market_manager.candles[symbol] = df
+
+            # Первичный расчет индикаторов
             rsi = ta.momentum.RSIIndicator(close=df['close'], window=14).rsi().iloc[-1]
-            
-            # EMA 50/200
             ema50 = ta.trend.EMAIndicator(close=df['close'], window=50).ema_indicator().iloc[-1]
             last_price = df['close'].iloc[-1]
 
@@ -71,7 +71,6 @@ class TechnicalAnalysisService:
                 })
                 
         except Exception as e:
-            # Ошибки часто бывают (нет пары, делистинг), но сейчас нам важно видеть почему
             logger.error(f"Failed to analyze {symbol}: {e}")
 
     async def close(self):

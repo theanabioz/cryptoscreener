@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 import websockets
+import pandas as pd
+import ta
 from typing import Dict, List
 from app.core.config import settings
 
@@ -15,6 +17,7 @@ class MarketDataManager:
         if cls._instance is None:
             cls._instance = super(MarketDataManager, cls).__new__(cls)
             cls._instance.prices: Dict[str, dict] = {}
+            cls._instance.candles: Dict[str, pd.DataFrame] = {} # Храним историю свечей
             cls._instance.running = False
         return cls._instance
 
@@ -39,58 +42,63 @@ class MarketDataManager:
                 await asyncio.sleep(5)
 
     def _process_message(self, data: List[dict]):
-        """
-        Обрабатывает поток !miniTicker@arr.
-        Формат Binance:
-        [
-          {
-            "e": "24hrMiniTicker",  // Event type
-            "E": 123456789,         // Event time
-            "s": "BTCUSDT",         // Symbol
-            "c": "0.0025",          // Close price
-            "o": "0.0010",          // Open price
-            "h": "0.0025",          // High price
-            "l": "0.0010",          // Low price
-            "v": "10000",           // Total traded base asset volume
-            "q": "18"               // Total traded quote asset volume
-          }
-        ]
-        """
         for ticker in data:
             symbol = ticker['s']
-            
-            # Фильтруем мусор: берем только USDT пары
-            if not symbol.endswith('USDT'):
-                continue
+            if not symbol.endswith('USDT'): continue
                 
             price = float(ticker['c'])
-            # Рассчитываем изменение % сами (или берем Open и Close)
             open_price = float(ticker['o'])
             change_pct = ((price - open_price) / open_price) * 100 if open_price else 0
             
-            # Если монеты еще нет в словаре, создаем структуру
+            # 1. Базовое обновление цены
             if symbol not in self.prices:
                 self.prices[symbol] = {
                     "symbol": symbol,
                     "price": price,
                     "change_24h": change_pct,
                     "volume": float(ticker['q']),
-                    "rsi": None,   # Placeholder
-                    "trend": None  # Placeholder
+                    "rsi": None,
+                    "trend": None
                 }
             else:
-                # Если есть, обновляем только рыночные данные, сохраняя RSI/Trend
                 self.prices[symbol].update({
                     "price": price,
                     "change_24h": change_pct,
                     "volume": float(ticker['q'])
                 })
 
+            # 2. Real-time TA calculation
+            # Если у нас есть история свечей для этой монеты (загруженная воркером)
+            if symbol in self.candles:
+                df = self.candles[symbol]
+                
+                # Обновляем последнюю свечу текущей ценой
+                # (В упрощенном виде мы просто меняем Close у последней свечи)
+                # Для полноценной логики нужно проверять время закрытия свечи,
+                # но для 1h таймфрейма внутри часа это корректная аппроксимация.
+                last_idx = df.index[-1]
+                df.at[last_idx, 'close'] = price
+                df.at[last_idx, 'high'] = max(df.at[last_idx, 'high'], price)
+                df.at[last_idx, 'low'] = min(df.at[last_idx, 'low'], price)
+                
+                # Пересчитываем RSI (достаточно пересчитать только хвост, но ta считает векторно)
+                # Чтобы было быстро, можно брать последние 50 строк
+                try:
+                    # RSI 14
+                    rsi = ta.momentum.RSIIndicator(close=df['close'], window=14).rsi().iloc[-1]
+                    
+                    # EMA 50
+                    ema50 = ta.trend.EMAIndicator(close=df['close'], window=50).ema_indicator().iloc[-1]
+                    
+                    self.prices[symbol].update({
+                        "rsi": round(rsi, 2) if not pd.isna(rsi) else None,
+                        "trend": "Bullish" if price > ema50 else "Bearish"
+                    })
+                except Exception:
+                    pass
+
     def get_all_tickers(self):
-        """Возвращает список всех монет отсортированный по объему"""
-        # Превращаем dict в list
         data = list(self.prices.values())
-        # Сортируем по объему (desc)
         data.sort(key=lambda x: x['volume'], reverse=True)
         return data
 
