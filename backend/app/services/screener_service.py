@@ -14,6 +14,9 @@ class ScreenerService:
             if df is None or df.empty:
                 return []
 
+            # DEBUG: Print available columns
+            print(f"DataFrame Columns: {df.columns.tolist()}", flush=True)
+
             # Берем топ-N записей
             df_limited = df.head(limit)
             
