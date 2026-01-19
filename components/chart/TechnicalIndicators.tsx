@@ -26,24 +26,29 @@ const IndicatorItem = ({ label, value, status, statusColor }: { label: string, v
 export const TechnicalIndicators = ({ coinData }: TechnicalIndicatorsProps) => {
   if (!coinData.rsi) return null; // Don't render if no data
 
+  const currentPrice = coinData.current_price ?? 0;
+  const ema50 = coinData.ema50 ?? 0;
+  const macd = coinData.macd ?? 0;
+  const rsi = coinData.rsi ?? 0;
+
   // RSI Logic
   let rsiStatus = 'Neutral';
   let rsiColor = 'gray';
-  if (coinData.rsi > 70) { rsiStatus = 'Overbought'; rsiColor = 'red'; }
-  else if (coinData.rsi < 30) { rsiStatus = 'Oversold'; rsiColor = 'green'; }
+  if (rsi > 70) { rsiStatus = 'Overbought'; rsiColor = 'red'; }
+  else if (rsi < 30) { rsiStatus = 'Oversold'; rsiColor = 'green'; }
 
   // MACD Logic
-  const macdStatus = (coinData.macd || 0) > 0 ? 'Bullish' : 'Bearish';
-  const macdColor = (coinData.macd || 0) > 0 ? 'green' : 'red';
+  const macdStatus = macd > 0 ? 'Bullish' : 'Bearish';
+  const macdColor = macd > 0 ? 'green' : 'red';
 
   // EMA Logic
-  const emaStatus = coinData.current_price > (coinData.ema50 || 0) ? 'Above' : 'Below';
-  const emaColor = coinData.current_price > (coinData.ema50 || 0) ? 'green' : 'red';
+  const emaStatus = currentPrice > ema50 ? 'Above' : 'Below';
+  const emaColor = currentPrice > ema50 ? 'green' : 'red';
 
   const indicators = [
-    { label: 'RSI (14)', value: coinData.rsi, status: rsiStatus, color: rsiColor },
-    { label: 'MACD', value: coinData.macd || '-', status: macdStatus, color: macdColor },
-    { label: 'EMA (50)', value: coinData.ema50 || '-', status: emaStatus, color: emaColor },
+    { label: 'RSI (14)', value: rsi, status: rsiStatus, color: rsiColor },
+    { label: 'MACD', value: macd || '-', status: macdStatus, color: macdColor },
+    { label: 'EMA (50)', value: ema50 || '-', status: emaStatus, color: emaColor },
     { label: 'Bollinger', value: coinData.bb_pos || 'Mid', status: 'Range', color: 'gray' },
   ];
 
