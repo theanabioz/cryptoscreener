@@ -24,7 +24,7 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <Box p={4} pb="80px">
+    <Box p={4} pb="80px" pt="calc(20px + env(safe-area-inset-top))">
       <Heading size="md" mb={6}>Profile</Heading>
       
       <VStack spacing={4} align="start">

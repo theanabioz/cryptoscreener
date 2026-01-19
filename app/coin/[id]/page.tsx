@@ -32,7 +32,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <Box pb="100px">
       {/* Header */}
-      <Flex p={4} align="center" justify="space-between" bg="gray.900">
+      <Flex p={4} pt="calc(10px + env(safe-area-inset-top))" align="center" justify="space-between" bg="gray.900">
         <Heading size="sm" ml={2}>{coin.name}</Heading>
         <IconButton 
           aria-label="Add to Watchlist" 

@@ -85,7 +85,8 @@ export default function ScreenerPage() {
         borderBottomWidth="1px" 
         borderColor="gray.800"
         px={4}
-        py={3}
+        pb={3}
+        pt="calc(10px + env(safe-area-inset-top))"
       >
         <Flex justify="space-between" align="center" mb={3}>
           <Heading size="md">Market</Heading>
