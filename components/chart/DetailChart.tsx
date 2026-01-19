@@ -2,7 +2,7 @@
 
 import { createChart, ColorType, IChartApi, CandlestickSeries, ISeriesApi } from 'lightweight-charts';
 import { useEffect, useRef, useState } from 'react';
-import { Box, HStack, Button, Spinner, Center } from '@chakra-ui/react';
+import { Box, HStack, Button, Spinner, Center, Text } from '@chakra-ui/react';
 import { useKlines } from '@/hooks/useKlines';
 
 interface DetailChartProps {
