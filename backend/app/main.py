@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+import ccxt.async_support as ccxt
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
@@ -10,9 +11,7 @@ async def lifespan(app: FastAPI):
     # Startup
     ws_task = asyncio.create_task(market_manager.start_stream())
     ta_task = asyncio.create_task(ta_service.start_loop())
-    
     yield
-    
     # Shutdown
     market_manager.running = False
     ta_service.running = False
@@ -32,6 +31,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/api/klines/{symbol}")
+async def get_klines(symbol: str, interval: str = '1h', limit: int = 100):
+    exchange = ccxt.binance()
+    try:
+        # Приводим символ к формату Binance (BTCUSDT)
+        formatted_symbol = symbol.upper()
+        if not formatted_symbol.endswith('USDT'):
+            formatted_symbol += 'USDT'
+            
+        ohlcv = await exchange.fetch_ohlcv(formatted_symbol, timeframe=interval, limit=limit)
+        
+        # Форматируем для Lightweight Charts: { time: 1234567890, open: ..., high: ..., low: ..., close: ... }
+        formatted_data = []
+        for candle in ohlcv:
+            formatted_data.append({
+                "time": int(candle[0] / 1000), # Unix timestamp in seconds
+                "open": candle[1],
+                "high": candle[2],
+                "low": candle[3],
+                "close": candle[4],
+                "volume": candle[5]
+            })
+            
+        return formatted_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await exchange.close()
 
 @app.get("/api/coins")
 async def get_coins(limit: int = 50):
