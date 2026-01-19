@@ -6,7 +6,7 @@ export interface Coin {
   price_change_percentage_24h: number;
   market_cap: number;
   total_volume: number;
-  sparkline_in_7d: {
+  sparkline_in_7d?: {
     price: number[];
   };
   image: string;

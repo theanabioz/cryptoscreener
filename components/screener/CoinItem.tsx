@@ -12,11 +12,16 @@ interface CoinItemProps {
 }
 
 export const CoinItem = ({ coin }: CoinItemProps) => {
-  const isPositive = coin.price_change_percentage_24h >= 0;
+  const isPositive = (coin.price_change_percentage_24h || 0) >= 0;
   const trendColor = isPositive ? 'green.400' : 'red.400';
   const badgeColor = isPositive ? 'green' : 'red';
   
   const { impact } = useHaptic();
+
+  // Safe access to properties
+  const price = coin.current_price || 0;
+  const change = coin.price_change_percentage_24h || 0;
+  const sparklineData = coin.sparkline_in_7d?.price || [];
 
   return (
     <Link 
@@ -44,22 +49,29 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
               fallbackSrc="https://via.placeholder.com/32"
             />
             <VStack align="start" spacing={0} overflow="hidden">
-              <Text fontWeight="bold" fontSize="sm" color="white" isTruncated maxW="full">{coin.symbol.toUpperCase()}</Text>
-              <Text fontSize="xs" color="gray.500" isTruncated maxW="full">{coin.name}</Text>
+              <Text fontWeight="bold" fontSize="sm" color="white" isTruncated maxW="full">
+                {coin.symbol ? coin.symbol.toUpperCase() : '???'}
+              </Text>
+              <Text fontSize="xs" color="gray.500" isTruncated maxW="full">{coin.name || 'Unknown'}</Text>
             </VStack>
           </HStack>
 
           {/* Middle: Sparkline */}
           <Box w="30%" display="flex" justifyContent="center">
-            <Box color={trendColor}>
-               <Sparkline data={coin.sparkline_in_7d.price} width={80} height={30} />
-            </Box>
+            {sparklineData.length > 0 ? (
+               <Box color={trendColor}>
+                  <Sparkline data={sparklineData} width={80} height={30} />
+               </Box>
+            ) : (
+               // Placeholder for sparkline if data missing
+               <Box w="80px" h="1px" bg="gray.800" />
+            )}
           </Box>
 
           {/* Right: Price + Change */}
           <VStack align="end" spacing={0} w="35%">
             <Text fontWeight="medium" fontSize="sm" color="white">
-              ${coin.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+              ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
             </Text>
             <Badge 
               colorScheme={badgeColor} 
@@ -71,7 +83,7 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
               alignItems="center"
             >
               {isPositive ? <TrendingUp size={10} style={{marginRight: '2px'}}/> : <TrendingDown size={10} style={{marginRight: '2px'}}/>}
-              {Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+              {Math.abs(change).toFixed(2)}%
             </Badge>
           </VStack>
         </Flex>
