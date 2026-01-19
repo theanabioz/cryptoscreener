@@ -45,5 +45,7 @@ async def get_coins(limit: int = 50):
     return result
 
 @app.get("/health")
+
 def health():
-    return {"status": "running", "tickers_count": len(market_manager.prices)}
+
+    return {"status": "running_v2", "tickers_count": len(market_manager.prices)}
