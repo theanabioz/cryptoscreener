@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: crypto_screener_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app # Hot reload при разработке (если запускать с флагом reload)
+    restart: always
+    environment:
+      - PORT=8000
