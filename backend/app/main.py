@@ -3,15 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 from app.services.market_data import market_manager
+from app.services.technical_analysis import ta_service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to Binance Stream
-    task = asyncio.create_task(market_manager.start_stream())
+    # Startup
+    ws_task = asyncio.create_task(market_manager.start_stream())
+    ta_task = asyncio.create_task(ta_service.start_loop())
+    
     yield
+    
     # Shutdown
     market_manager.running = False
-    task.cancel()
+    ta_service.running = False
+    ws_task.cancel()
+    ta_task.cancel()
+    await ta_service.close()
 
 app = FastAPI(
     title="Crypto Screener Core",
@@ -31,6 +38,7 @@ async def get_coins(limit: int = 50):
     tickers = market_manager.get_all_tickers()
     
     result = []
+    # Если фильтрация "тяжелая" для всех монет, лучше пагинировать, но пока отдаем limit
     for t in tickers[:limit]:
         result.append({
             "id": t['symbol'].replace('USDT', '').lower(),
@@ -40,12 +48,14 @@ async def get_coins(limit: int = 50):
             "price_change_percentage_24h": t['change_24h'],
             "market_cap": 0, 
             "total_volume": t['volume'],
+            # Новые поля TA
+            "rsi": t.get('rsi'),
+            "trend": t.get('trend'),
             "image": f"https://assets.coincap.io/assets/icons/{t['symbol'].replace('USDT', '').lower()}@2x.png"
         })
     return result
 
 @app.get("/health")
-
 def health():
+    return {"status": "running_v3_ta", "tickers_count": len(market_manager.prices)}
 
-    return {"status": "running_v2", "tickers_count": len(market_manager.prices)}
