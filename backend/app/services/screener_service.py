@@ -1,24 +1,22 @@
 import tvscreener as tv
 import pandas as pd
 import math
+import time
 
 class ScreenerService:
+    def __init__(self):
+        self._cached_data = None
+        self._last_update = 0
+        self._cache_ttl = 1.0 # 1 second cache
+
     def get_crypto_screener(self, limit: int = 50):
+        # Проверка кэша
+        now = time.time()
+        if self._cached_data and (now - self._last_update) < self._cache_ttl:
+            return self._cached_data
+
         try:
             cs = tv.CryptoScreener()
-            
-            # Пытаемся применить фильтры для очистки списка
-            # В версии 0.2.0 фильтры задаются так (согласно доке и логам):
-            try:
-                # Фильтруем BINANCE и пары USDT
-                # Если Column не импортируется, попробуем передать условия как аргументы или использовать внутренние методы
-                # Но судя по всему, CryptoScreener по умолчанию и так хорошо работает.
-                # Чтобы убрать .P (perpetuals), мы можем просто отфильтровать результат в Pandas
-                pass
-            except:
-                pass
-
-            # Получаем данные (по умолчанию TV возвращает ~100-300 записей, этого хватит)
             df = cs.get()
             
             if df is None or df.empty:
@@ -46,7 +44,13 @@ class ScreenerService:
             # Конвертируем в dict
             data = df_limited.to_dict(orient='records')
             
-            return self._normalize_data(data)
+            result = self._normalize_data(data)
+            
+            # Сохраняем в кэш
+            self._cached_data = result
+            self._last_update = time.time()
+            
+            return result
         except Exception as e:
             print(f"TVScreener Error: {e}")
             return []
