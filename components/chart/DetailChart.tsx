@@ -1,24 +1,34 @@
 'use client'
 
-import { createChart, ColorType, IChartApi, CandlestickSeries } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, ISeriesApi } from 'lightweight-charts';
 import { useEffect, useRef, useState } from 'react';
-import { Box, HStack, Button } from '@chakra-ui/react';
+import { Box, HStack, Button, Spinner, Center } from '@chakra-ui/react';
+import { useKlines } from '@/hooks/useKlines';
 
 interface DetailChartProps {
-  coinId: string;
+  coinId: string; // This is actually 'btc', 'eth'
+  symbol: string; // This should be 'BTC', 'ETH' for API
   basePrice: number;
   isPositive: boolean;
 }
 
 const TIMEFRAMES = ['1H', '4H', '1D', '1W'];
 
-export const DetailChart = ({ coinId, basePrice, isPositive }: DetailChartProps) => {
+export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const [activeTf, setActiveTf] = useState('1D');
+  const [activeTf, setActiveTf] = useState('1H');
+
+  // Convert UI timeframe to Binance format
+  const apiInterval = activeTf.toLowerCase();
+  
+  // Fetch real data
+  const { data: klines, isLoading, isError } = useKlines(symbol, apiInterval);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartContainerRef.current || !klines || klines.length === 0) return;
+
+    // Clean up previous chart if any (manual DOM cleanup to be sure)
+    chartContainerRef.current.innerHTML = '';
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -37,8 +47,6 @@ export const DetailChart = ({ coinId, basePrice, isPositive }: DetailChartProps)
       },
     });
 
-    chartRef.current = chart;
-
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#48BB78',
       downColor: '#F56565',
@@ -46,45 +54,8 @@ export const DetailChart = ({ coinId, basePrice, isPositive }: DetailChartProps)
       wickUpColor: '#48BB78',
       wickDownColor: '#F56565',
     });
-
-    // Generate mock candle data based on timeframe
-    const generateData = () => {
-      const stepMap: Record<string, number> = {
-        '1H': 60,       // 1 minute candles (showing 1 hour)
-        '4H': 300,      // 5 minute candles
-        '1D': 3600,     // 1 hour candles
-        '1W': 86400,    // 1 day candles
-      };
-      
-      const step = stepMap[activeTf];
-      let initialDate = Math.floor(new Date().getTime() / 1000) - (100 * step);
-      let lastClose = basePrice;
-      const data = [];
-
-      for (let i = 0; i < 100; i++) {
-        const open = lastClose;
-        const volatility = basePrice * (activeTf === '1W' ? 0.1 : 0.02); // More volatility on 1W
-        const change = (Math.random() - 0.5) * volatility;
-        const close = open + change;
-        const high = Math.max(open, close) + Math.random() * (volatility * 0.5);
-        const low = Math.min(open, close) - Math.random() * (volatility * 0.5);
-        
-        data.push({
-          time: initialDate + (i * step) as any,
-          open,
-          high,
-          low,
-          close,
-        });
-        
-        lastClose = close;
-      }
-      return data;
-    };
-
-    const data = generateData();
-    candlestickSeries.setData(data);
-
+    
+    candlestickSeries.setData(klines as any);
     chart.timeScale().fitContent();
 
     const handleResize = () => {
@@ -99,7 +70,7 @@ export const DetailChart = ({ coinId, basePrice, isPositive }: DetailChartProps)
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [basePrice, activeTf]);
+  }, [klines, activeTf]); // Re-run when data or timeframe changes
 
   return (
     <Box w="full">
@@ -118,7 +89,20 @@ export const DetailChart = ({ coinId, basePrice, isPositive }: DetailChartProps)
           </Button>
         ))}
       </HStack>
-      <Box ref={chartContainerRef} w="full" h="300px" />
+      
+      <Box position="relative" w="full" h="300px">
+        {isLoading && (
+          <Center position="absolute" top={0} left={0} right={0} bottom={0} zIndex={10}>
+            <Spinner color="brand.400" />
+          </Center>
+        )}
+        {isError && (
+          <Center position="absolute" top={0} left={0} right={0} bottom={0} zIndex={10}>
+            <Text color="red.400" fontSize="sm">Error loading chart</Text>
+          </Center>
+        )}
+        <Box ref={chartContainerRef} w="full" h="100%" />
+      </Box>
     </Box>
   );
 };

@@ -108,7 +108,12 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* Chart */}
       <Box w="full" mt={4} mb={8}>
-        <DetailChart coinId={coin.id} basePrice={coin.current_price} isPositive={isPositive} />
+        <DetailChart 
+          coinId={coin.id} 
+          symbol={coin.symbol} 
+          basePrice={coin.current_price} 
+          isPositive={isPositive} 
+        />
       </Box>
 
       {/* Stats Grid */}
