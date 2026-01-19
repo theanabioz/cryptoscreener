@@ -1,4 +1,5 @@
 import tvscreener as tv
+# Fixed import issue for v0.2.0
 
 class ScreenerService:
     def get_crypto_screener(self, limit: int = 50):
