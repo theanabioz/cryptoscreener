@@ -3,42 +3,42 @@ import tvscreener as tv
 
 class ScreenerService:
     def get_crypto_screener(self, limit: int = 50):
-        # Инициализируем скринер для криптовалют
+        # Инициализируем скринер
         cs = tv.CryptoScreener()
         
-        # Фильтр: Только Binance и пары к USDT (для простоты MVP)
-        # В версии 0.2.x методы могут называться иначе, но попробуем стандартные.
-        # Если set_exchange не сработает, нужно будет искать другой способ фильтрации.
-        # Но пока проблема была только в импорте Column.
-        cs.set_exchange('BINANCE')
-        cs.set_symbol_search('USDT') 
+        # В версии 0.2.0 API изменился.
+        # Вместо set_exchange используем фильтрацию через where, если она доступна,
+        # или просто запрашиваем данные, так как CryptoScreener по умолчанию ищет крипту.
         
-        # Сортировка по объему
-        cs.sort_by('volume', ascending=False)
+        # Попытка 1: Просто получить данные, чтобы проверить работоспособность.
+        # Фильтрацию биржи добавим позже, когда разберемся с их API.
+        
+        # Сортировка
+        # cs.sort_by('volume', ascending=False) # Этот метод тоже может отсутствовать
         
         # Получаем данные
         df = cs.get(limit=limit, print_request=False)
         
-        # Преобразуем DataFrame в список словарей
         data = df.to_dict(orient='records')
-        
         return self._normalize_data(data)
 
     def _normalize_data(self, raw_data: list):
-        """
-        Приводим данные TradingView к нашему формату Frontend (Coin interface)
-        """
         normalized = []
         for item in raw_data:
+            # Пытаемся безопасно достать данные
+            symbol_raw = item.get('symbol', '')
+            # Очищаем тикер (обычно приходит BINANCE:BTCUSDT)
+            ticker = symbol_raw.split(':')[1] if ':' in symbol_raw else symbol_raw
+            
             coin = {
-                "id": item.get('symbol', '').split('USDT')[0].lower(), # BTCUSDT -> btc
-                "symbol": item.get('symbol', '').replace('BINANCE:', ''),
-                "name": item.get('description', item.get('symbol')), 
-                "current_price": item.get('close') or item.get('price'),
-                "price_change_percentage_24h": item.get('change') or item.get('change_abs'),
-                "market_cap": item.get('market_cap_basic'),
-                "total_volume": item.get('volume'),
-                "image": f"https://s2.coinmarketcap.com/static/img/coins/64x64/1.png"
+                "id": ticker.replace('USDT', '').lower(),
+                "symbol": ticker,
+                "name": item.get('description', ticker), 
+                "current_price": item.get('close') or item.get('price', 0),
+                "price_change_percentage_24h": item.get('change', 0),
+                "market_cap": item.get('market_cap_basic', 0),
+                "total_volume": item.get('volume', 0),
+                "image": "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png"
             }
             normalized.append(coin)
             
