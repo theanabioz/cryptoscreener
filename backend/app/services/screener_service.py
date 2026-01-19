@@ -30,6 +30,9 @@ class ScreenerService:
         normalized = []
         for item in raw_data:
             try:
+                # DEBUG: Print raw item to see available keys in logs
+                print(f"Raw item keys: {item.keys()}", flush=True)
+                
                 # Пытаемся безопасно достать данные.
                 # В 0.2.0 колонки могут называться иначе, поэтому используем .get() с дефолтами
                 
