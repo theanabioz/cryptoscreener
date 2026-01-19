@@ -1,28 +1,22 @@
 'use client'
 
-import { Box, Flex, Heading, IconButton, Input, InputGroup, InputLeftElement, VStack, useDisclosure, Text } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton, Input, InputGroup, InputLeftElement, VStack, Text } from "@chakra-ui/react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { MOCK_COINS } from "@/lib/mockData";
 import { CoinItem } from "@/components/screener/CoinItem";
 import { CoinSkeleton } from "@/components/screener/CoinSkeleton";
-import { FilterModal } from "@/components/screener/FilterModal";
 import { useState, useMemo, useEffect } from "react";
-import { ScreenerFilter } from "@/lib/types";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useFilterStore } from "@/store/filterStore";
+import Link from "next/link";
 
 export default function ScreenerPage() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const { impact } = useHaptic();
   
   const [isLoading, setIsLoading] = useState(true);
   
-  const [filters, setFilters] = useState<ScreenerFilter>({
-    search: "",
-    minPrice: "",
-    maxPrice: "",
-    marketCap: "all",
-    priceChange: "all"
-  });
+  // Use global filter store
+  const { filters, setFilters, activeFilterCount } = useFilterStore();
 
   // Simulate initial fetch
   useEffect(() => {
@@ -60,19 +54,7 @@ export default function ScreenerPage() {
     });
   }, [filters]);
 
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (filters.minPrice) count++;
-    if (filters.maxPrice) count++;
-    if (filters.marketCap !== 'all') count++;
-    if (filters.priceChange !== 'all') count++;
-    return count;
-  }, [filters]);
-
-  const handleOpenFilters = () => {
-    impact('medium');
-    onOpen();
-  };
+  const activeCount = activeFilterCount();
 
   return (
     <Box>
@@ -111,30 +93,32 @@ export default function ScreenerPage() {
             />
           </InputGroup>
 
-          <Box position="relative">
-            <IconButton 
-              aria-label="Filters" 
-              icon={<SlidersHorizontal size={20} />} 
-              variant={activeFilterCount > 0 ? "solid" : "outline"}
-              colorScheme={activeFilterCount > 0 ? "teal" : "gray"}
-              borderColor="gray.700"
-              bg={activeFilterCount > 0 ? undefined : "gray.800"}
-              _hover={{ bg: 'gray.700' }}
-              onClick={handleOpenFilters}
-            />
-            {activeFilterCount > 0 && (
-              <Box 
-                position="absolute" 
-                top="-2px" 
-                right="-2px" 
-                bg="red.400" 
-                w="2" 
-                h="2" 
-                borderRadius="full" 
-                zIndex={2}
+          <Link href="/filters" onClick={() => impact('medium')}>
+            <Box position="relative">
+              <IconButton 
+                aria-label="Filters" 
+                icon={<SlidersHorizontal size={20} />} 
+                variant={activeCount > 0 ? "solid" : "outline"}
+                colorScheme={activeCount > 0 ? "teal" : "gray"}
+                borderColor="gray.700"
+                bg={activeCount > 0 ? undefined : "gray.800"}
+                _hover={{ bg: 'gray.700' }}
+                // onClick handled by Link
               />
-            )}
-          </Box>
+              {activeCount > 0 && (
+                <Box 
+                  position="absolute" 
+                  top="-2px" 
+                  right="-2px" 
+                  bg="red.400" 
+                  w="2" 
+                  h="2" 
+                  borderRadius="full" 
+                  zIndex={2}
+                />
+              )}
+            </Box>
+          </Link>
         </Box>
       </Box>
 
@@ -156,13 +140,6 @@ export default function ScreenerPage() {
           )
         )}
       </VStack>
-
-      <FilterModal 
-        isOpen={isOpen} 
-        onClose={onClose} 
-        currentFilters={filters}
-        onApply={(newFilters) => setFilters(newFilters)}
-      />
     </Box>
   );
 }
