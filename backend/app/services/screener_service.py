@@ -18,31 +18,29 @@ class ScreenerService:
             except:
                 pass
 
+            # Получаем данные (по умолчанию TV возвращает ~100-300 записей, этого хватит)
             df = cs.get()
             
             if df is None or df.empty:
                 return []
 
-            # --- ОЧИСТКА ДАННЫХ В PANDAS (Надежнее чем сырые фильтры либы) ---
-            # 1. Только Binance (если колонка Exchange есть)
+            # --- ОЧИСТКА ДАННЫХ В PANDAS ---
+            # 1. Только Binance (если есть колонка)
             if 'Exchange' in df.columns:
                 df = df[df['Exchange'] == 'BINANCE']
             
-            # 2. Только пары к USDT
+            # 2. Только пары к USDT и фильтрация фьючерсов
             if 'Symbol' in df.columns:
                 df = df[df['Symbol'].str.contains('USDT', na=False)]
-                # Пытаемся убрать фьючерсы (обычно содержат цифры или .P)
-                # Но делаем это мягко, чтобы не удалить всё
+                # Убираем .P (Perpetual)
                 df = df[~df['Symbol'].str.contains(r'\.P$', na=False)] 
             
-            # 3. Сортировка по объему (Volume)
-            
-            # 3. Сортировка по объему (Volume)
+            # 3. Сортировка по объему
             vol_col = 'Volume' if 'Volume' in df.columns else 'Average Volume (10 day)'
             if vol_col in df.columns:
                 df = df.sort_values(by=vol_col, ascending=False)
 
-            # Берем топ-N записей
+            # Берем топ-N записей ПОСЛЕ ВСЕХ ФИЛЬТРОВ
             df_limited = df.head(limit)
             
             # Конвертируем в dict
