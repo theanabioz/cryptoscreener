@@ -68,13 +68,23 @@ class MarketDataManager:
             open_price = float(ticker['o'])
             change_pct = ((price - open_price) / open_price) * 100 if open_price else 0
             
-            self.prices[symbol] = {
-                "symbol": symbol,
-                "price": price,
-                "change_24h": change_pct,
-                "volume": float(ticker['q']), # Quote volume (USDT)
-                # Другие поля добавим позже
-            }
+            # Если монеты еще нет в словаре, создаем структуру
+            if symbol not in self.prices:
+                self.prices[symbol] = {
+                    "symbol": symbol,
+                    "price": price,
+                    "change_24h": change_pct,
+                    "volume": float(ticker['q']),
+                    "rsi": None,   # Placeholder
+                    "trend": None  # Placeholder
+                }
+            else:
+                # Если есть, обновляем только рыночные данные, сохраняя RSI/Trend
+                self.prices[symbol].update({
+                    "price": price,
+                    "change_24h": change_pct,
+                    "volume": float(ticker['q'])
+                })
 
     def get_all_tickers(self):
         """Возвращает список всех монет отсортированный по объему"""
