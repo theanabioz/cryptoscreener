@@ -30,7 +30,10 @@
 
 ## 🚀 Roadmap to V2.0 (Database Era)
 1. **Finish Download:** Wait for Collector to finish (est. 18 hours).
-2. **Deploy TimescaleDB:** Add `timescaledb` service to docker-compose.
+2. **Deploy TimescaleDB:**
+   - [x] Schema designed (`candles` hypertable with compression).
+   - [x] Docker Compose configured.
+   - [ ] Run `docker compose up -d timescaledb`.
 3. **Ingest:** Write a script to load Parquet files into TimescaleDB using `pgcopy` (Bulk Insert).
 4. **Rewrite API:**
    - Stop storing state in RAM (except simple caching).

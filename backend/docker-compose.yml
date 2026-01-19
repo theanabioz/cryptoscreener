@@ -1,8 +1,27 @@
 version: '3.8'
 
 services:
+  # Сервис загрузки данных (сейчас работает)
   collector:
     build: ./collector
     volumes:
-      - ./data:/data  # Сохраняем данные на хост машину
-    restart: "no" # Завершится, когда скачает всё
+      - ./data:/data
+    restart: "no"
+
+  # База данных (Будущий центр системы)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: crypto_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: screener
+    volumes:
+      - ts_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: always
+
+volumes:
+  ts_data:
