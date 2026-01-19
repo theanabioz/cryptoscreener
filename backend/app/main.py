@@ -62,11 +62,11 @@ async def get_klines(symbol: str, interval: str = '1h', limit: int = 500):
         await exchange.close()
 
 @app.get("/api/coins")
-async def get_coins(limit: int = 50):
+async def get_coins(limit: int = 400):
     tickers = market_manager.get_all_tickers()
     
     result = []
-    # Если фильтрация "тяжелая" для всех монет, лучше пагинировать, но пока отдаем limit
+    # Теперь отдаем до 400 монет
     for t in tickers[:limit]:
         result.append({
             "id": t['symbol'].replace('USDT', '').lower(),

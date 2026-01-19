@@ -17,12 +17,33 @@ class MarketDataManager:
         if cls._instance is None:
             cls._instance = super(MarketDataManager, cls).__new__(cls)
             cls._instance.prices: Dict[str, dict] = {}
-            cls._instance.candles: Dict[str, pd.DataFrame] = {} # Храним историю свечей
+            cls._instance.candles: Dict[str, pd.DataFrame] = {}
+            cls._instance.symbol_names: Dict[str, str] = {} # Храним полные имена
             cls._instance.running = False
         return cls._instance
 
+    async def fetch_full_names(self):
+        """Один раз загружаем соответствие тикеров и полных имен"""
+        try:
+            import ccxt.async_support as ccxt_lib
+            ex = ccxt_lib.binance()
+            markets = await ex.fetch_markets()
+            for m in markets:
+                if m['quote'] == 'USDT':
+                    # Пытаемся достать имя из info или использовать base
+                    # У Binance info обычно содержит 'baseAsset'
+                    self.symbol_names[m['symbol']] = m['baseId'] # BTC, ETH... 
+                    # Для более красивых имен можно будет потом подключить CoinGecko
+            await ex.close()
+            logger.info(f"Loaded {len(self.symbol_names)} full names from Binance")
+        except Exception as e:
+            logger.error(f"Error fetching full names: {e}")
+
     async def start_stream(self):
         """Запускает WebSocket соединение с Binance"""
+        # Сначала грузим имена
+        await self.fetch_full_names()
+        
         self.running = True
         url = f"{settings.BINANCE_WS_URL}/!miniTicker@arr"
         
@@ -52,12 +73,17 @@ class MarketDataManager:
             
             # 1. Базовое обновление цены
             if symbol not in self.prices:
+                name = self.symbol_names.get(symbol, symbol.replace('USDT', ''))
                 self.prices[symbol] = {
-                    "symbol": symbol,
+                    "symbol": symbol.replace('USDT', ''),
+                    "name": name,
                     "price": price,
                     "change_24h": change_pct,
                     "volume": float(ticker['q']),
                     "rsi": None,
+                    "macd": None,
+                    "ema50": None,
+                    "bb_pos": None,
                     "trend": None
                 }
             else:
