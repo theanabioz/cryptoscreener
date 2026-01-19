@@ -89,7 +89,7 @@ export default function ScreenerPage() {
         pt="calc(10px + env(safe-area-inset-top))"
       >
         {/* Centered Title */}
-        <Flex justify="center" align="center" mb={3}>
+        <Flex justify="center" align="center" h="40px" mb={2}>
           <Heading size="md">Market</Heading>
         </Flex>
         

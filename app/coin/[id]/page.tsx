@@ -44,7 +44,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
         pb={3}
         px={4}
       >
-        <Flex justify="center" align="center" position="relative" h="40px">
+        <Flex justify="center" align="center" position="relative" h="40px" mb={2}>
           {/* Back button space placeholder if needed, but native button handles navigation. 
               We just center the title. */}
           <Heading size="md">{coin.name}</Heading>
