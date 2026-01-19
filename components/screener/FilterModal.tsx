@@ -71,14 +71,15 @@ export const FilterModal = ({ isOpen, onClose, currentFilters, onApply }: Filter
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      isCentered 
-      size="xs" // Mobile friendly size
-      motionPreset="scale" // Fade in scale animation
-      scrollBehavior="inside" // Allows scrolling inside modal if keyboard covers it
+      // Removed isCentered to prevent jumping with keyboard
+      size="xs" 
+      motionPreset="scale" 
+      scrollBehavior="inside"
     >
       <ModalOverlay backdropFilter="blur(4px)" />
       <ModalContent 
         mx={4} 
+        mt="15vh" // Fixed margin from top
         borderRadius="xl"
         bg="gray.900" 
         borderWidth="1px" 
