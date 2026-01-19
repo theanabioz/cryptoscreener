@@ -71,22 +71,25 @@ export const FilterModal = ({ isOpen, onClose, currentFilters, onApply }: Filter
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      // Removed isCentered to prevent jumping with keyboard
-      size="xs" 
-      motionPreset="scale" 
-      scrollBehavior="inside"
+      size="full" // Full screen approach for stability
+      motionPreset="slideInBottom" // Slide up like a native page
     >
-      <ModalOverlay backdropFilter="blur(4px)" />
       <ModalContent 
-        mx={4} 
-        mt="15vh" // Fixed margin from top
-        borderRadius="xl"
+        m={0}
+        borderRadius={0}
         bg="gray.900" 
-        borderWidth="1px" 
-        borderColor="gray.700"
+        containerProps={{
+          zIndex: 2000 // Ensure it's on top of everything
+        }}
       >
-        <ModalHeader borderBottomWidth="1px" borderColor="gray.800">Filters</ModalHeader>
-        <ModalCloseButton />
+        <ModalHeader 
+          borderBottomWidth="1px" 
+          borderColor="gray.800"
+          pt="calc(12px + env(safe-area-inset-top))" // Safe area padding
+        >
+          Filters
+        </ModalHeader>
+        <ModalCloseButton mt="calc(6px + env(safe-area-inset-top))" />
         
         <ModalBody py={6}>
           <VStack spacing={6} align="stretch">
