@@ -88,16 +88,38 @@ export default function ScreenerPage() {
         pb={3}
         pt="calc(10px + env(safe-area-inset-top))"
       >
-        <Flex justify="space-between" align="center" mb={3}>
+        {/* Centered Title */}
+        <Flex justify="center" align="center" mb={3}>
           <Heading size="md">Market</Heading>
-          
+        </Flex>
+        
+        {/* Search + Filter Row */}
+        <Box display="flex" gap={2}>
+          <InputGroup size="md">
+            <InputLeftElement pointerEvents="none">
+              <Search color="gray.500" size={18} />
+            </InputLeftElement>
+            <Input 
+              placeholder="Search coins..." 
+              variant="filled" 
+              bg="gray.800" 
+              _hover={{ bg: 'gray.700' }}
+              _focus={{ bg: 'gray.700', borderColor: 'brand.400' }}
+              borderRadius="lg"
+              value={filters.search}
+              onChange={(e) => setFilters({...filters, search: e.target.value})}
+            />
+          </InputGroup>
+
           <Box position="relative">
             <IconButton 
               aria-label="Filters" 
               icon={<SlidersHorizontal size={20} />} 
-              variant={activeFilterCount > 0 ? "solid" : "ghost"}
+              variant={activeFilterCount > 0 ? "solid" : "outline"}
               colorScheme={activeFilterCount > 0 ? "teal" : "gray"}
-              size="sm"
+              borderColor="gray.700"
+              bg={activeFilterCount > 0 ? undefined : "gray.800"}
+              _hover={{ bg: 'gray.700' }}
               onClick={handleOpenFilters}
             />
             {activeFilterCount > 0 && (
@@ -109,26 +131,11 @@ export default function ScreenerPage() {
                 w="2" 
                 h="2" 
                 borderRadius="full" 
+                zIndex={2}
               />
             )}
           </Box>
-        </Flex>
-        
-        <InputGroup size="sm">
-          <InputLeftElement pointerEvents="none">
-            <Search color="gray.500" size={16} />
-          </InputLeftElement>
-          <Input 
-            placeholder="Search coins..." 
-            variant="filled" 
-            bg="gray.800" 
-            _hover={{ bg: 'gray.700' }}
-            _focus={{ bg: 'gray.700', borderColor: 'brand.400' }}
-            borderRadius="lg"
-            value={filters.search}
-            onChange={(e) => setFilters({...filters, search: e.target.value})}
-          />
-        </InputGroup>
+        </Box>
       </Box>
 
       {/* Coins List */}
