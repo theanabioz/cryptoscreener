@@ -28,16 +28,14 @@ class ScreenerService:
             if 'Exchange' in df.columns:
                 df = df[df['Exchange'] == 'BINANCE']
             
-            # 2. Только пары к USDT и НЕ фьючерсы
+            # 2. Только пары к USDT
             if 'Symbol' in df.columns:
-                # Оставляем только те что содержат USDT
                 df = df[df['Symbol'].str.contains('USDT', na=False)]
-                # Убираем всё где есть точки, тире или лишние символы (фьючерсы, индексы)
-                df = df[~df['Symbol'].str.contains(r'[\.\-\:]', na=False)]
+                # Пытаемся убрать фьючерсы (обычно содержат цифры или .P)
+                # Но делаем это мягко, чтобы не удалить всё
+                df = df[~df['Symbol'].str.contains(r'\.P$', na=False)] 
             
-            # 3. Дополнительная фильтрация: убираем если в названии есть "Futures" или "Perpetual"
-            if 'Description' in df.columns:
-                df = df[~df['Description'].str.contains('Futures|Perpetual|Inverse', case=False, na=False)]
+            # 3. Сортировка по объему (Volume)
             
             # 3. Сортировка по объему (Volume)
             vol_col = 'Volume' if 'Volume' in df.columns else 'Average Volume (10 day)'
