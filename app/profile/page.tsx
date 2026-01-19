@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Heading, Text, VStack, Avatar, Divider, Button } from '@chakra-ui/react'
+import { Box, Heading, Text, VStack, Avatar, Divider, Button, Flex } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
 
 interface TelegramUser {
@@ -24,11 +24,26 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <Box p={4} pb="80px" pt="calc(20px + env(safe-area-inset-top))">
-      <Heading size="md" mb={6}>Profile</Heading>
+    <Box>
+      {/* Header */}
+      <Box 
+        position="sticky" 
+        top={0} 
+        zIndex={10} 
+        bg="gray.900" 
+        borderBottomWidth="1px" 
+        borderColor="gray.800"
+        px={4}
+        pb={3}
+        pt="calc(10px + env(safe-area-inset-top))"
+      >
+        <Flex justify="center" align="center" h="40px" mb={2}>
+          <Heading size="md">Profile</Heading>
+        </Flex>
+      </Box>
       
-      <VStack spacing={4} align="start">
-        <Box display="flex" alignItems="center" gap={4}>
+      <VStack spacing={4} align="stretch" p={4} pb="80px">
+        <Box display="flex" alignItems="center" gap={4} p={2}>
           <Avatar 
             size="lg" 
             name={user?.first_name || "Guest User"} 
@@ -47,16 +62,18 @@ export default function ProfilePage() {
 
         <Divider my={4} borderColor="gray.700" />
 
-        <Button w="full" variant="outline" colorScheme="gray">Settings</Button>
-        <Button w="full" variant="outline" colorScheme="gray">Theme</Button>
-        <Button w="full" variant="outline" colorScheme="red">Log Out</Button>
-      </VStack>
+        <VStack spacing={3}>
+          <Button w="full" variant="outline" colorScheme="gray" justifyContent="start" py={6}>Settings</Button>
+          <Button w="full" variant="outline" colorScheme="gray" justifyContent="start" py={6}>Theme</Button>
+          <Button w="full" variant="outline" colorScheme="red" justifyContent="start" py={6}>Log Out</Button>
+        </VStack>
 
-      {!user && (
-        <Text fontSize="xs" color="gray.600" mt={4} textAlign="center">
-          Open this app in Telegram to see your profile.
-        </Text>
-      )}
+        {!user && (
+          <Text fontSize="xs" color="gray.600" mt={8} textAlign="center">
+            Open this app in Telegram to see your profile.
+          </Text>
+        )}
+      </VStack>
     </Box>
   )
 }
