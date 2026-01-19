@@ -27,6 +27,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false, // Prevent zoom on mobile inputs
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

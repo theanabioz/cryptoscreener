@@ -100,7 +100,7 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
         <DrawerCloseButton mt={2} />
         <DrawerHeader textAlign="center" borderBottomWidth="0px">Filters</DrawerHeader>
 
-        <DrawerBody pt={2}>
+        <DrawerBody pt={2} pb={8}>
           <VStack spacing={6} align="stretch">
             
             {/* Price Range */}
