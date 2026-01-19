@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { MOCK_COINS } from '@/lib/mockData';
 import { DetailChart } from '@/components/chart/DetailChart';
+import { TechnicalIndicators } from '@/components/chart/TechnicalIndicators';
 import { use } from 'react';
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 
@@ -91,6 +92,9 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           <StatNumber fontSize="md">${(coin.current_price * 0.95).toFixed(2)}</StatNumber>
         </Stat>
       </SimpleGrid>
+
+      {/* Technical Indicators Section */}
+      <TechnicalIndicators />
       
       {/* Description / About */}
       <Box p={4} mt={4}>
