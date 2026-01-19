@@ -62,16 +62,42 @@ async def get_klines(symbol: str, interval: str = '1h', limit: int = 500):
         await exchange.close()
 
 @app.get("/api/coins")
-async def get_coins(limit: int = 400):
+async def get_coins(limit: int = 400, ids: str = None):
+    # Если запросили конкретные монеты (для Watchlist)
+    if ids:
+        target_ids = ids.split(',')
+        result = []
+        # Проходим по всем ценам в памяти и ищем нужные
+        # (Это не O(1), но для 400 монет в памяти это мгновенно)
+        for symbol, data in market_manager.prices.items():
+            coin_id = symbol.replace('USDT', '').lower()
+            if coin_id in target_ids:
+                result.append({
+                    "id": coin_id,
+                    "symbol": data['symbol'],
+                    "name": data.get('name', data['symbol']),
+                    "current_price": data['price'],
+                    "price_change_percentage_24h": data['change_24h'],
+                    "market_cap": 0,
+                    "total_volume": data['volume'],
+                    "rsi": data.get('rsi'),
+                    "macd": data.get('macd'),
+                    "ema50": data.get('ema50'),
+                    "bb_pos": data.get('bb_pos'),
+                    "trend": data.get('trend'),
+                    "image": f"https://assets.coincap.io/assets/icons/{coin_id}@2x.png"
+                })
+        return result
+
+    # Обычный режим (Топ по объему)
     tickers = market_manager.get_all_tickers()
     
     result = []
-    # Теперь отдаем до 400 монет
     for t in tickers[:limit]:
         result.append({
             "id": t['symbol'].replace('USDT', '').lower(),
             "symbol": t['symbol'].replace('USDT', ''),
-            "name": t['symbol'].replace('USDT', ''), 
+            "name": t.get('name', t['symbol'].replace('USDT', '')), 
             "current_price": t['price'],
             "price_change_percentage_24h": t['change_24h'],
             "market_cap": 0, 
