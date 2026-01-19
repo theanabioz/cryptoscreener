@@ -69,12 +69,12 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
       </VStack>
 
       {/* Chart */}
-      <Box w="full" h="300px" my={4}>
+      <Box w="full" mt={4} mb={8}>
         <DetailChart coinId={coin.id} basePrice={coin.current_price} isPositive={isPositive} />
       </Box>
 
       {/* Stats Grid */}
-      <SimpleGrid columns={2} spacing={4} px={4}>
+      <SimpleGrid columns={2} spacing={4} px={4} mt={4}>
         <Stat bg="gray.800" p={3} borderRadius="lg">
           <StatLabel color="gray.400">Market Cap</StatLabel>
           <StatNumber fontSize="md">${(coin.market_cap / 1e9).toFixed(2)}B</StatNumber>

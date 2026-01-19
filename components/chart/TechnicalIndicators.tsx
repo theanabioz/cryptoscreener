@@ -10,7 +10,7 @@ interface IndicatorProps {
 }
 
 const IndicatorItem = ({ label, value, status, statusColor }: IndicatorProps) => (
-  <Box bg="gray.800" p={3} borderRadius="lg" borderLeftWidth="4px" borderLeftColor={statusColor || 'gray.600'}>
+  <Box bg="gray.800" p={3} borderRadius="lg">
     <VStack align="start" spacing={1}>
       <Text fontSize="xs" color="gray.400" fontWeight="bold" textTransform="uppercase">{label}</Text>
       <HStack justify="space-between" w="full">
