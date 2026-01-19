@@ -71,13 +71,36 @@ export const FilterDrawer = ({ isOpen, onClose, currentFilters, onApply }: Filte
   );
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay />
-      <DrawerContent borderTopRadius="20px">
-        <DrawerCloseButton />
-        <DrawerHeader>Filters</DrawerHeader>
+    <Drawer 
+      isOpen={isOpen} 
+      placement="bottom" 
+      onClose={onClose}
+      variant="always-open" // Prevent some default layout shifts
+    >
+      <DrawerOverlay 
+        backdropFilter="blur(4px)" 
+        transition="all 0.4s ease-in-out" 
+      />
+      <DrawerContent 
+        borderTopRadius="24px"
+        bg="gray.900"
+        maxH="85vh" // Ensure it doesn't cover whole screen
+        // Custom animation props for framer-motion
+        transition="transform 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
+      >
+        <Box 
+          w="40px" 
+          h="1.5" 
+          bg="gray.700" 
+          borderRadius="full" 
+          mx="auto" 
+          mt={3} 
+          mb={1} 
+        />
+        <DrawerCloseButton mt={2} />
+        <DrawerHeader textAlign="center" borderBottomWidth="0px">Filters</DrawerHeader>
 
-        <DrawerBody>
+        <DrawerBody pt={2}>
           <VStack spacing={6} align="stretch">
             
             {/* Price Range */}
