@@ -1,16 +1,20 @@
 'use client'
 
 import { Box, Flex, IconButton, Text, Heading, VStack, HStack, Image, Badge, SimpleGrid, Stat, StatLabel, StatNumber } from '@chakra-ui/react';
-import { ChevronLeft, TrendingUp, TrendingDown, Star } from 'lucide-react';
+import { TrendingUp, TrendingDown, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { MOCK_COINS } from '@/lib/mockData';
 import { DetailChart } from '@/components/chart/DetailChart';
 import { use } from 'react';
+import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
+  
+  // Enable Native Telegram Back Button
+  useTelegramBackButton();
   
   // Find coin (in real app, useQuery)
   const coin = MOCK_COINS.find(c => c.id === id);
@@ -21,7 +25,6 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <Box p={4}>
         <Text>Coin not found</Text>
-        <IconButton aria-label="Back" icon={<ChevronLeft />} onClick={() => router.back()} />
       </Box>
     );
   }
@@ -30,13 +33,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
     <Box pb="100px">
       {/* Header */}
       <Flex p={4} align="center" justify="space-between" bg="gray.900">
-        <IconButton 
-          aria-label="Back" 
-          icon={<ChevronLeft size={24} />} 
-          variant="ghost" 
-          onClick={() => router.back()} 
-        />
-        <Heading size="sm">{coin.name}</Heading>
+        <Heading size="sm" ml={2}>{coin.name}</Heading>
         <IconButton 
           aria-label="Add to Watchlist" 
           icon={<Star size={24} />} 

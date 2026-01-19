@@ -2,7 +2,7 @@
 
 import { ChakraProvider, extendTheme, type ThemeConfig } from '@chakra-ui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // 1. Config for Dark Mode
 const config: ThemeConfig = {
@@ -44,6 +44,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       },
     },
   }))
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand(); // Open full height
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
