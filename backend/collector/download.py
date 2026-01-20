@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 # Настройки
 TIMEFRAME = '1m'
-YEARS = 2
+DAYS = 90
 DATA_DIR = '/data/raw_parquet' # Путь внутри Docker
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -22,9 +22,9 @@ async def download_pair(exchange, symbol):
 
     logger.info(f"Downloading {symbol}...")
     
-    # Период: 2 года назад -> Сейчас
+    # Период: 90 дней назад -> Сейчас
     end_time = int(datetime.now().timestamp() * 1000)
-    start_time = int((datetime.now() - timedelta(days=YEARS*365)).timestamp() * 1000)
+    start_time = int((datetime.now() - timedelta(days=DAYS)).timestamp() * 1000)
     
     all_candles = []
     current_time = start_time

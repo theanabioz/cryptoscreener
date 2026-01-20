@@ -5,9 +5,10 @@ export async function GET(request: Request) {
   const ids = searchParams.get('ids');
   
   try {
+    const baseUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const backendUrl = ids 
-      ? `http://142.93.171.76:8000/api/coins?ids=${ids}`
-      : 'http://142.93.171.76:8000/api/coins';
+      ? `${baseUrl}/api/coins?ids=${ids}`
+      : `${baseUrl}/api/coins`;
 
     const res = await fetch(backendUrl, {
       cache: 'no-store',
