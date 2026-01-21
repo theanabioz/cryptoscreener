@@ -4,6 +4,7 @@ import os
 import psycopg2
 from sqlalchemy import create_engine
 import time
+from tqdm import tqdm
 
 # Настройки подключения
 DB_URL = "postgresql://postgres:password@timescaledb:5432/screener"
@@ -11,6 +12,10 @@ DATA_DIR = "/data/raw_parquet"
 
 def ingest():
     files = glob.glob(os.path.join(DATA_DIR, "*.parquet"))
+    if not files:
+        print(f"No parquet files found in {DATA_DIR}!")
+        return
+        
     print(f"Found {len(files)} files to ingest.")
     
     # Ждем, пока база поднимется
@@ -20,33 +25,35 @@ def ingest():
             engine = create_engine(DB_URL)
             engine.connect()
             break
-        except:
-            print("Waiting for DB...")
+        except Exception as e:
+            print(f"Waiting for DB... ({e})")
             time.sleep(3)
 
-    for i, file_path in enumerate(files):
+    if not engine:
+        print("Could not connect to database. Exiting.")
+        return
+
+    # Используем tqdm для прогресс-бара
+    pbar = tqdm(files, desc="Ingesting coins", unit="coin")
+    
+    for file_path in pbar:
         symbol = os.path.basename(file_path).replace('.parquet', '')
-        # В БД у нас обычно символ с косой чертой или в оригинальном виде. 
-        # Если в имени файла BTCUSDT, в БД положим BTC/USDT (или оставим как есть)
-        # Давайте приведем к единому стандарту: добавим слэш перед USDT
+        # Приводим к стандарту BTC/USDT
         db_symbol = symbol.replace('USDT', '/USDT')
         
-        print(f"[{i+1}/{len(files)}] Ingesting {db_symbol}...")
+        pbar.set_postfix({"symbol": db_symbol})
         
         try:
             df = pd.read_parquet(file_path)
-            # Переименовываем колонки под схему БД
-            # Схема: time, symbol, open, high, low, close, volume
             df['symbol'] = db_symbol
             
-            # Сохраняем в БД используя быстрый метод
-            # Мы используем method='multi' или просто to_sql с чанками
+            # Сохраняем в БД
             df.to_sql('candles', engine, if_exists='append', index=False, chunksize=10000)
             
         except Exception as e:
-            print(f"Error ingesting {symbol}: {e}")
+            print(f"\nError ingesting {symbol}: {e}")
 
-    print("✅ Ingestion complete!")
+    print("\n✅ Ingestion complete!")
 
 if __name__ == "__main__":
     ingest()
