@@ -20,7 +20,7 @@ async def get_coins(ids: str = None, strategy: str = None):
                 FIRST(close, time) as open_24h,
                 SUM(volume) as volume_24h
             FROM candles
-            WHERE time > NOW() - INTERVAL '24 hours'
+            WHERE time > NOW() - INTERVAL '3 days'
             GROUP BY symbol
         )
         SELECT 
