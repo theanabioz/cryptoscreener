@@ -98,8 +98,8 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
           <Grid templateColumns="repeat(3, 1fr)" gap={2} mb={4}>
             <GridItem bg="whiteAlpha.100" borderRadius="md" p={2} textAlign="center">
               <Text fontSize="10px" color="gray.400">RSI (14)</Text>
-              <Text fontWeight="bold" fontSize="sm" color={coin.rsi > 70 ? "red.300" : coin.rsi < 30 ? "green.300" : "white"}>
-                {coin.rsi || 50}
+              <Text fontWeight="bold" fontSize="sm" color={(coin.rsi ?? 50) > 70 ? "red.300" : (coin.rsi ?? 50) < 30 ? "green.300" : "white"}>
+                {coin.rsi ? coin.rsi.toFixed(1) : '-'}
               </Text>
             </GridItem>
             <GridItem bg="whiteAlpha.100" borderRadius="md" p={2} textAlign="center">

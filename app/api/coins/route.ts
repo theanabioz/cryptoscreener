@@ -2,13 +2,12 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const ids = searchParams.get('ids');
+  // Remove 'ts' parameter as it's only for cache busting on client
+  searchParams.delete('ts'); 
   
   try {
     const baseUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const backendUrl = ids 
-      ? `${baseUrl}/api/coins?ids=${ids}`
-      : `${baseUrl}/api/coins`;
+    const backendUrl = `${baseUrl}/api/coins?${searchParams.toString()}`;
 
     const res = await fetch(backendUrl, {
       cache: 'no-store',

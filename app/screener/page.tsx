@@ -39,6 +39,10 @@ const STRATEGIES = [
   },
 ];
 
+import Link from 'next/link';
+
+// ... (STRATEGIES array remains same)
+
 export default function ScreenerStrategiesPage() {
   const { impact } = useHaptic();
 
@@ -48,52 +52,52 @@ export default function ScreenerStrategiesPage() {
       
       <SimpleGrid columns={1} spacing={4}>
         {STRATEGIES.map((strategy) => (
-          <Box
-            key={strategy.id}
-            bg="gray.800"
-            borderRadius="xl"
-            p={4}
-            position="relative"
-            overflow="hidden"
-            _active={{ transform: 'scale(0.98)' }}
-            transition="all 0.2s"
-            onClick={() => impact('medium')}
-          >
-            {/* Gradient Background Accent */}
-            <Box 
-              position="absolute" 
-              top={0} 
-              right={0} 
-              w="100px" 
-              h="100px" 
-              bgGradient={strategy.gradient} 
-              opacity={0.2} 
-              filter="blur(40px)" 
-              borderRadius="full"
-            />
-
-            <VStack align="start" spacing={3}>
+          <Link key={strategy.id} href={`/screener/results?strategy=${strategy.id}`} onClick={() => impact('medium')}>
+            <Box
+              bg="gray.800"
+              borderRadius="xl"
+              p={4}
+              position="relative"
+              overflow="hidden"
+              _active={{ transform: 'scale(0.98)' }}
+              transition="all 0.2s"
+            >
+              {/* Gradient Background Accent */}
               <Box 
-                p={2} 
-                borderRadius="lg" 
+                position="absolute" 
+                top={0} 
+                right={0} 
+                w="100px" 
+                h="100px" 
                 bgGradient={strategy.gradient} 
-                color="white"
-              >
-                <Icon as={strategy.icon} size={24} />
-              </Box>
-              
-              <VStack align="start" spacing={1}>
-                <Heading size="md">{strategy.title}</Heading>
-                <Text fontSize="sm" color="gray.400">
-                  {strategy.description}
-                </Text>
-              </VStack>
+                opacity={0.2} 
+                filter="blur(40px)" 
+                borderRadius="full"
+              />
 
-              <Badge colorScheme={strategy.color} variant="subtle" borderRadius="full" px={2}>
-                Auto-Update
-              </Badge>
-            </VStack>
-          </Box>
+              <VStack align="start" spacing={3}>
+                <Box 
+                  p={2} 
+                  borderRadius="lg" 
+                  bgGradient={strategy.gradient} 
+                  color="white"
+                >
+                  <Icon as={strategy.icon} size={24} />
+                </Box>
+                
+                <VStack align="start" spacing={1}>
+                  <Heading size="md">{strategy.title}</Heading>
+                  <Text fontSize="sm" color="gray.400">
+                    {strategy.description}
+                  </Text>
+                </VStack>
+
+                <Badge colorScheme={strategy.color} variant="subtle" borderRadius="full" px={2}>
+                  Auto-Update
+                </Badge>
+              </VStack>
+            </Box>
+          </Link>
         ))}
       </SimpleGrid>
     </Box>

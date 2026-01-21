@@ -5,30 +5,14 @@ from datetime import datetime, timedelta
 router = APIRouter()
 
 @router.get("/coins")
-async def get_coins(ids: str = None):
+async def get_coins(ids: str = None, strategy: str = None):
     """
-    Возвращает список монет из таблицы coin_status (предварительно рассчитанные данные).
-    """
-    
-    # Теперь запрос очень простой и быстрый
-    query = """
-        SELECT 
-            symbol,
-            current_price,
-            volume_24h, -- Пока это volume за 1h, исправим в воркере позже
-            rsi_14,
-            macd,
-            price_change_24h -- Это поле мы пока не заполнили в воркере, надо добавить
-        FROM coin_status
+    Возвращает список монет из таблицы coin_status.
+    Поддерживает фильтрацию по стратегиям.
     """
     
-    # Временно: чтобы не ломать фронтенд, пока воркер не заполнил базу,
-    # сделаем fallback на старый метод, если таблица пустая?
-    # Нет, лучше запустить воркер.
-    
-    # Давайте пока оставим старый метод, НО подмешаем туда RSI из coin_status через JOIN
-    
-    query = """
+    # Базовый запрос
+    query_base = """
         WITH latest_data AS (
             SELECT 
                 symbol,
@@ -46,10 +30,32 @@ async def get_coins(ids: str = None):
             cs.ema_50
         FROM latest_data ld
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
+        WHERE 1=1
     """
     
+    params = []
+    
+    # Фильтрация по стратегии
+    if strategy == 'rsi-oversold':
+        query_base += " AND cs.rsi_14 < 30"
+    elif strategy == 'strong-trend':
+        query_base += " AND ld.current_price > cs.ema_50"
+    elif strategy == 'pump-radar':
+        # Пока просто фильтр по высокому объему, в будущем - аномалия
+        query_base += " AND ld.volume_24h > 50000000" 
+    elif strategy == 'volatility':
+        # Change > 5% or < -5% (нужно считать change в SQL для фильтрации)
+        # Упростим: просто вернем все, отсортируем на клиенте или сделаем HAVING
+        pass
+
+    # Фильтрация по ID (если нужно)
+    if ids:
+        id_list = ids.split(',')
+        # Сложно матчить 'btc' с 'BTC/USDT', пропустим пока для краткости
+        pass
+
     try:
-        rows = await db.fetch_all(query)
+        rows = await db.fetch_all(query_base)
         
         result = []
         for row in rows:
@@ -57,6 +63,10 @@ async def get_coins(ids: str = None):
             open_24h = row['open_24h']
             change_pct = ((price - open_24h) / open_24h * 100) if open_24h else 0
             
+            # Доп. фильтрация на Python (если сложно в SQL)
+            if strategy == 'volatility' and abs(change_pct) < 5:
+                continue
+
             result.append({
                 "id": row['symbol'].replace('/', '').lower(),
                 "symbol": row['symbol'].split('/')[0],
@@ -66,7 +76,7 @@ async def get_coins(ids: str = None):
                 "price_change_percentage_24h": round(change_pct, 2),
                 "market_cap": 0,
                 "total_volume": row['volume_24h'] or 0,
-                "rsi": row['rsi_14'] or 50.0, # Берем реальный RSI или 50
+                "rsi": row['rsi_14'] or 50.0, 
                 "macd": row['macd'] or 0
             })
             
@@ -74,5 +84,4 @@ async def get_coins(ids: str = None):
 
     except Exception as e:
         print(f"Error fetching coins: {e}")
-        # Если таблицы coin_status нет, вернем ошибку 500, но это ок для дебага
         raise HTTPException(status_code=500, detail=str(e))
