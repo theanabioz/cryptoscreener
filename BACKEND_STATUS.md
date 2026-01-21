@@ -1,45 +1,39 @@
 # 🐍 Backend Technical Status
 
 ## Current Infrastructure
+- **Server:** 8 vCPU, 16GB RAM, 150GB NVMe (Ready for high load).
 - **Docker Compose V2:** Orchestrates services.
-- **Service `collector`:** Currently running a massive download job (646 pairs, 2 years history).
-- **Service `api`:** NOT RUNNING (Stopped to allow Collector to finish). *Note: Once collector finishes, we will bring API back or migrate to DB.*
+- **Service `timescaledb`:** **RUNNING** (Storing historical data).
+- **Service `collector`:**
+  - **Status:** Finished downloading 90 days of history for 450 pairs.
+  - **Task:** Currently ingesting Parquet files into TimescaleDB.
 
 ## 📂 Data Structure
-- **Path:** `backend/data/raw_parquet/`
-- **Format:** Parquet (Snappy compression).
-- **Naming:** `BTCUSDT.parquet`
-- **Schema:** `time (datetime), open, high, low, close, volume`
+- **Raw Storage:** `backend/data/raw_parquet/` (Local backup of 90 days history).
+- **Database:** TimescaleDB (PostgreSQL 14).
+  - **Table:** `candles` (Hypertable with compression).
+  - **Columns:** `time, symbol, open, high, low, close, volume`.
+  - **Retention:** 2 years (configured policy).
+  - **Compression:** After 3 days (by symbol).
 
 ## 🧠 Services Codebase
 ### `collector/download.py`
-- Uses `ccxt` with `enableRateLimit=True`.
-- Fetches all `*USDT` pairs from Binance Spot.
-- Chunks download into 1000-candle requests.
-- Skips already existing files (Resume capability).
+- Optimized for 90 days history (`DAYS = 90`).
+- Successfully downloaded ~1GB of data.
 
-### `app/services/market_data.py` (Archived in API)
-- Connects to `wss://stream.binance.com:9443/ws/!miniTicker@arr`.
-- Maintains a Python `Dict` with latest prices.
-- Supports `dict.update()` to merge TA indicators with live prices.
+### `collector/ingest_parquet.py`
+- **New Script:** Reads Parquet files and bulk inserts them into TimescaleDB using SQLAlchemy.
+- **Features:** Progress bar (`tqdm`), automatic dependency installation.
 
-### `app/services/technical_analysis.py` (Archived in API)
-- Fetches 1h candles for active symbols.
-- Calculates RSI (14), EMA (50), MACD, Bollinger Bands using `ta` library.
-- Updates `market_manager` state.
+## 🚀 Roadmap
+1. **[COMPLETED] Hardware Upgrade:** Migrated to 8 vCPU / 16GB RAM server.
+2. **[COMPLETED] Data Harvesting:** Downloaded 90 days of 1m candles.
+3. **[IN PROGRESS] Database Ingestion:** Populating TimescaleDB.
+4. **[NEXT] API V2:**
+   - Connect FastAPI to TimescaleDB.
+   - Serve historical klines from DB instead of FileSystem/Binance Proxy.
+   - Implement real-time WebSocket updates.
 
-## 🚀 Roadmap to V2.0 (Database Era)
-1. **Finish Download:** Wait for Collector to finish (est. 18 hours).
-2. **Deploy TimescaleDB:**
-   - [x] Schema designed (`candles` hypertable with compression).
-   - [x] Docker Compose configured.
-   - [ ] Run `docker compose up -d timescaledb`.
-3. **Ingest:** Write a script to load Parquet files into TimescaleDB using `pgcopy` (Bulk Insert).
-4. **Rewrite API:**
-   - Stop storing state in RAM (except simple caching).
-   - Read Historical Klines from DB (Instant response).
-   - Read Live Price from Redis or keep WebSocket memory.
-
-## ⚠️ Known Issues / Notes
-- **Memory:** Storing 450 coins with full history in RAM is impossible. That's why we moved to Parquet/DB approach.
-- **Rate Limits:** Collector respects Binance limits, but multiple restarts might trigger temporary IP bans.
+## ⚠️ Notes
+- **Backups:** Raw Parquet files are stored locally as a safety net.
+- **Performance:** Ingestion speed is ~6-9 sec/coin due to index building. Total time est. ~1 hour.

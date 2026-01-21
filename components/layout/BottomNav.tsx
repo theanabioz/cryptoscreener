@@ -1,14 +1,15 @@
 'use client'
 
 import { Box, Flex, Text, VStack, useColorModeValue } from '@chakra-ui/react'
-import { LayoutList, Star, Bell, User } from 'lucide-react'
+import { LayoutList, Star, Bell, User, ScanLine } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useHaptic } from '@/hooks/useHaptic'
 
 const NAV_ITEMS = [
-  { label: 'Screener', icon: LayoutList, href: '/' },
+  { label: 'Home', icon: LayoutList, href: '/' },
   { label: 'Watchlist', icon: Star, href: '/watchlist' },
+  { label: 'Screener', icon: ScanLine, href: '/screener' },
   { label: 'Alerts', icon: Bell, href: '/alerts' },
   { label: 'Profile', icon: User, href: '/profile' },
 ]

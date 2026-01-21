@@ -9,7 +9,9 @@ export interface Kline {
 }
 
 const fetchKlines = async (symbol: string, interval: string): Promise<Kline[]> => {
-  const res = await fetch(`/api/klines/${symbol}?interval=${interval}&limit=500`);
+  // Ensure we request the full pair (e.g., BTC -> BTCUSDT)
+  const pair = symbol.toUpperCase().includes('USDT') ? symbol : `${symbol}USDT`;
+  const res = await fetch(`/api/klines/${pair}?interval=${interval}&limit=500`);
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }

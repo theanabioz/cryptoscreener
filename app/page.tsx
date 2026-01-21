@@ -2,7 +2,7 @@
 
 import { Box, Flex, Heading, IconButton, Input, InputGroup, InputLeftElement, VStack, Text } from "@chakra-ui/react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { CoinItem } from "@/components/screener/CoinItem";
+import { AccordionCoinItem } from "@/components/screener/AccordionCoinItem";
 import { CoinSkeleton } from "@/components/screener/CoinSkeleton";
 import { useState, useMemo, useEffect } from "react";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -137,7 +137,7 @@ export default function ScreenerPage() {
         ) : (
           filteredCoins.length > 0 ? (
             filteredCoins.map(coin => (
-              <CoinItem key={coin.id} coin={coin} />
+              <AccordionCoinItem key={coin.id} coin={coin} />
             ))
           ) : (
             <Box p={8} textAlign="center">

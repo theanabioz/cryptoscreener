@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from database import db
-from routers import klines
+from routers import klines, screener
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
@@ -25,6 +25,7 @@ app.add_middleware(
 
 # Подключаем роуты
 app.include_router(klines.router, prefix="/api")
+app.include_router(screener.router, prefix="/api")
 
 @app.get("/")
 async def root():

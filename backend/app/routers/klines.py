@@ -39,7 +39,7 @@ async def get_klines(
     # TimescaleDB умеет сам собирать 1m свечи в 5m, 1h и т.д.
     query = f"""
         SELECT 
-            time_bucket('{bucket}', time) AS time,
+            time_bucket('{bucket}', time) AS bucket_time,
             FIRST(open, time) as open,
             MAX(high) as high,
             MIN(low) as low,
@@ -47,8 +47,8 @@ async def get_klines(
             SUM(volume) as volume
         FROM candles
         WHERE symbol = $1
-        GROUP BY time
-        ORDER BY time DESC
+        GROUP BY bucket_time
+        ORDER BY bucket_time DESC
         LIMIT $2
     """
 
@@ -56,23 +56,18 @@ async def get_klines(
         rows = await db.fetch_all(query, symbol, limit)
         
         if not rows:
-            # Попробуем без слэша, вдруг в базе по-другому
-            # (Хотя мы вроде договорились писать со слэшем)
             return []
 
-        # Форматируем ответ для Lightweight Charts (time: timestamp, value: float)
-        # Lightweight Charts ждет время в секундах (unix timestamp)
-        # Сортируем по возрастанию (ASC) для графика
         result = [
             {
-                "time": int(row["time"].timestamp()),
+                "time": int(row["bucket_time"].timestamp()),
                 "open": row["open"],
                 "high": row["high"],
                 "low": row["low"],
                 "close": row["close"],
                 "volume": row["volume"]
             }
-            for row in reversed(rows) # Разворачиваем, так как из БД брали DESC (последние)
+            for row in reversed(rows)
         ]
         
         return result

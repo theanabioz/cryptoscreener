@@ -7,26 +7,24 @@
 - **Data:** TanStack Query (`useCoins`, `useKlines`).
 
 ## 🔌 API Integration
-### Proxy Pattern
-To avoid Mixed Content (HTTPS -> HTTP) and CORS:
-- **Client:** Fetches `/api/coins` (Next.js Route Handler).
-- **Next.js Server:** Fetches `http://142.93.171.76:8000/api/coins` (DigitalOcean).
-- **Headers:** `Cache-Control: no-store` is enforced to prevent Vercel from caching real-time data.
+### Backend Connection
+- **Config:** Migrated from hardcoded IP to `BACKEND_URL` environment variable.
+- **Current State:** Ready to connect to the new powerful server.
 
 ### Live Updates
 - **Global:** `useCoins` polls every **1000ms** (1s).
-- **Visuals:** `PriceFlash` component animates color changes (Green/Red) on price update.
+- **Visuals:** `PriceFlash` component animates color changes (Green/Red).
 
 ## 📱 Mobile / Telegram UX
 - **Navigation:** Bottom Tab Bar + Native Telegram Back Button.
-- **Filters:** Full Screen Page (`/filters`) to avoid iOS keyboard layout shifts.
-- **Header:** Sticky, safe-area aware (`viewport-fit=cover`), centrally aligned titles to avoid overlapping with Telegram controls.
+- **Layout:** Optimized "Accordion" style list planned for Screener to avoid horizontal scrolling.
+- **Filters:** Full Screen Page (`/filters`).
 
 ## 📊 Charting
 - **Lib:** `lightweight-charts` (TradingView).
-- **Data Source:** `/api/klines/[symbol]` (Proxy to Backend).
-- **Live Candle:** `DetailChart.tsx` merges historical Klines with the current live price from WebSocket to animate the last candle in real-time.
+- **Data Source:** Currently proxying to Backend. Next step: fetch directly from new DB API.
 
 ## 📝 TODO / Next Steps
-- **WebSockets:** Move from Polling (1s fetch) to a real WebSocket connection for the Frontend for smoother "tick-by-tick" updates.
-- **Virtualization:** If the list grows > 500 items, implement `react-window` to save DOM nodes.
+1. **Connect to New API:** Update `.env` with new server IP.
+2. **Screener UI:** Implement "Accordion" view for mobile-friendly data display.
+3. **WebSockets:** Move from Polling to WS for real-time feed.
