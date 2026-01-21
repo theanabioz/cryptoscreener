@@ -12,7 +12,8 @@ services:
     environment:
       POSTGRES_HOST: timescaledb
     depends_on:
-      - timescaledb
+      timescaledb:
+        condition: service_healthy
     restart: always
 
   # TA Worker (Фоновый расчет индикаторов)
@@ -25,7 +26,8 @@ services:
     environment:
       POSTGRES_HOST: timescaledb
     depends_on:
-      - timescaledb
+      timescaledb:
+        condition: service_healthy
     restart: always
 
   # Сервис загрузки данных
@@ -37,6 +39,9 @@ services:
       - .env
     environment:
       POSTGRES_HOST: timescaledb
+    depends_on:
+      timescaledb:
+        condition: service_healthy
     restart: "no"
 
   # База данных
@@ -50,6 +55,11 @@ services:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
 
 volumes:
