@@ -1,14 +1,29 @@
 version: '3.8'
 
 services:
-  # Сервис загрузки данных (сейчас работает)
+  # Основной API (FastAPI)
+  api:
+    build: ./app
+    container_name: crypto_api
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=screener
+      - POSTGRES_HOST=timescaledb
+    depends_on:
+      - timescaledb
+    restart: always
+
+  # Сервис загрузки данных
   collector:
     build: ./collector
     volumes:
       - ./data:/data
     restart: "no"
 
-  # База данных (Будущий центр системы)
+  # База данных
   timescaledb:
     image: timescale/timescaledb:latest-pg14
     container_name: crypto_db
