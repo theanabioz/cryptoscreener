@@ -7,7 +7,7 @@ import time
 from tqdm import tqdm
 
 # Настройки подключения
-DB_URL = "postgresql://postgres:password@timescaledb:5432/screener"
+DB_URL = "postgresql://postgres:password@timescaledb:5432/postgres"
 DATA_DIR = "/data/raw_parquet"
 
 def ingest():
