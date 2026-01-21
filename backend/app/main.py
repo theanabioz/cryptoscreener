@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.database import db
-from app.routers import klines
+from database import db
+from routers import klines
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
