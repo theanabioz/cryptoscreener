@@ -33,6 +33,12 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
       return `$${(vol / 1e3).toFixed(1)}K`;
   };
 
+  // Sparkline trend logic
+  const sparklineData = coin.sparkline_in_7d?.price || [];
+  const sparklineColor = sparklineData.length >= 2 
+    ? (sparklineData[sparklineData.length - 1] >= sparklineData[0] ? 'green.400' : 'red.400')
+    : (isPositive ? 'green.400' : 'red.400');
+
   return (
     <Box 
       borderBottomWidth="1px" 
@@ -80,10 +86,10 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
         {/* Center: Sparkline */}
         <Flex w="30%" justify="center" align="center">
            <Sparkline 
-              data={coin.sparkline_in_7d?.price || []} 
+              data={sparklineData} 
               width={70} 
               height={25} 
-              color={isPositive ? 'green.400' : 'red.400'} 
+              color={sparklineColor} 
            />
         </Flex>
 

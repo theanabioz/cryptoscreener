@@ -15,7 +15,6 @@ interface CoinItemProps {
 
 export const CoinItem = ({ coin }: CoinItemProps) => {
   const isPositive = (coin.price_change_percentage_24h || 0) >= 0;
-  const trendColor = isPositive ? 'green.400' : 'red.400';
   const badgeColor = isPositive ? 'green' : 'red';
   
   const { impact } = useHaptic();
@@ -24,6 +23,11 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
   const price = coin.current_price || 0;
   const change = coin.price_change_percentage_24h || 0;
   const sparklineData = coin.sparkline_in_7d?.price || [];
+
+  // Sparkline color based on data trend
+  const sparklineColor = sparklineData.length >= 2
+    ? (sparklineData[sparklineData.length - 1] >= sparklineData[0] ? 'green.400' : 'red.400')
+    : (isPositive ? 'green.400' : 'red.400');
 
   return (
     <Link 
@@ -61,10 +65,10 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
           {/* Middle: Sparkline */}
           <Box w="30%" display="flex" justifyContent="center" alignItems="center">
             <Sparkline 
-              data={coin.sparkline_in_7d?.price || []} 
+              data={sparklineData} 
               width={80} 
               height={30} 
-              color={isPositive ? 'green.400' : 'red.400'} 
+              color={sparklineColor} 
             />
           </Box>
 
