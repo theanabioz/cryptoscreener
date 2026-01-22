@@ -1,39 +1,44 @@
 # 🐍 Backend Technical Status
 
 ## Current Infrastructure
-- **Server:** 8 vCPU, 16GB RAM, 150GB NVMe (Ready for high load).
-- **Docker Compose V2:** Orchestrates services.
-- **Service `timescaledb`:** **RUNNING** (Storing historical data).
-- **Service `collector`:**
-  - **Status:** Finished downloading 90 days of history for 450 pairs.
-  - **Task:** Currently ingesting Parquet files into TimescaleDB.
+- **Server:** 8 vCPU, 16GB RAM, 150GB NVMe.
+- **Docker Compose V2:** Orchestrates `api`, `streamer`, `worker`, `timescaledb`.
+- **Service `timescaledb`:** **RUNNING** (Storing historical & realtime data).
+- **Service `streamer`:** **RUNNING** (Real-time WebSocket data ingestion).
+- **Service `api`:** **RUNNING** (FastAPI serving data to Frontend).
 
-## 📂 Data Structure
-- **Raw Storage:** `backend/data/raw_parquet/` (Local backup of 90 days history).
+## 📂 Data & Database
 - **Database:** TimescaleDB (PostgreSQL 14).
-  - **Table:** `candles` (Hypertable with compression).
-  - **Columns:** `time, symbol, open, high, low, close, volume`.
-  - **Retention:** 2 years (configured policy).
-  - **Compression:** After 3 days (by symbol).
+- **Table:** `candles` (Hypertable with compression).
+- **Columns:** `time, symbol, open, high, low, close, volume`.
+- **Retention:** 2 years (configured policy).
+- **Real-time:** `streamer` inserts/upserts data every <1s.
 
 ## 🧠 Services Codebase
-### `collector/download.py`
-- Optimized for 90 days history (`DAYS = 90`).
-- Successfully downloaded ~1GB of data.
 
-### `collector/ingest_parquet.py`
-- **New Script:** Reads Parquet files and bulk inserts them into TimescaleDB using SQLAlchemy.
-- **Features:** Progress bar (`tqdm`), automatic dependency installation.
+### `app/streamer.py` (Refactored)
+- **Architecture:** Producer-Consumer pattern with `asyncio.Queue`.
+- **Producers:** 450+ individual tasks listening to Binance WebSocket (`watch_ohlcv`).
+- **Consumer:** Batched DB Writer (writes 30-50 updates per batch) for high throughput.
+- **Resilience:** Auto-reconnect, exponential backoff, individual symbol isolation.
+
+### `app/routers/klines.py`
+- **Timeframes:** Supports `1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d`, `1w`.
+- **Aggregation:** Uses TimescaleDB `time_bucket` for efficient on-the-fly aggregation.
+- **History:** Supports retrieving deep history (limit up to 5000 candles).
+
+### `app/routers/screener.py`
+- **Sparklines:** Generates 24h hourly price arrays using SQL aggregation (`array_agg` + `time_bucket`).
+- **Performance:** Optimized query for "Market" list view.
 
 ## 🚀 Roadmap
-1. **[COMPLETED] Hardware Upgrade:** Migrated to 8 vCPU / 16GB RAM server.
-2. **[COMPLETED] Data Harvesting:** Downloaded 90 days of 1m candles.
-3. **[IN PROGRESS] Database Ingestion:** Populating TimescaleDB.
-4. **[NEXT] API V2:**
-   - Connect FastAPI to TimescaleDB.
-   - Serve historical klines from DB instead of FileSystem/Binance Proxy.
-   - Implement real-time WebSocket updates.
+1. **[COMPLETED] Hardware Upgrade.**
+2. **[COMPLETED] Data Harvesting & Ingestion.**
+3. **[COMPLETED] Real-time Streamer:** Multi-task architecture, <1s latency.
+4. **[COMPLETED] API V2:** Full support for charts, screener, and sparklines.
+5. **[NEXT] Advanced Strategies:** Implement `pump-radar` and `volatility` logic in `worker.py`.
+6. **[NEXT] Alerts:** Push notifications for price levels.
 
 ## ⚠️ Notes
-- **Backups:** Raw Parquet files are stored locally as a safety net.
-- **Performance:** Ingestion speed is ~6-9 sec/coin due to index building. Total time est. ~1 hour.
+- **Optimization:** `streamer` is tuned for stability (pinned `aiohttp < 3.10` due to CCXT compatibility).
+- **Scalability:** System handles 450+ pairs effortlessly.

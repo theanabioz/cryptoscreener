@@ -4,27 +4,33 @@
 - **Framework:** Next.js 14 (App Router).
 - **Styling:** Chakra UI v2 (Dark Mode default).
 - **State:** Zustand (`useFilterStore`, `useWatchlistStore`).
-- **Data:** TanStack Query (`useCoins`, `useKlines`).
+- **Data:** TanStack Query (`useCoins`, `useKlines`) with optimized polling.
 
 ## 🔌 API Integration
 ### Backend Connection
-- **Config:** Migrated from hardcoded IP to `BACKEND_URL` environment variable.
-- **Current State:** Ready to connect to the new powerful server.
+- **Status:** Connected to production API.
+- **Proxy:** Next.js API Routes (`/api/coins`, `/api/klines/*`) act as secure proxy to Python Backend.
 
 ### Live Updates
-- **Global:** `useCoins` polls every **1000ms** (1s).
-- **Visuals:** `PriceFlash` component animates color changes (Green/Red).
+- **Screener:** `useCoins` polls every **1000ms** (1s).
+- **Charts:** `useKlines` fetches updated candles.
+- **Sparklines:** Real-time visualization of 24h trend in coin list.
+- **Visuals:** `PriceFlash` component for tick-by-tick animation.
 
 ## 📱 Mobile / Telegram UX
+- **Coin List:** `AccordionCoinItem` with integrated Sparkline and details.
 - **Navigation:** Bottom Tab Bar + Native Telegram Back Button.
-- **Layout:** Optimized "Accordion" style list planned for Screener to avoid horizontal scrolling.
 - **Filters:** Full Screen Page (`/filters`).
 
 ## 📊 Charting
 - **Lib:** `lightweight-charts` (TradingView).
-- **Data Source:** Currently proxying to Backend. Next step: fetch directly from new DB API.
+- **Features:**
+  - **Timeframes:** 1M, 3M, 5M, 15M, 30M, 1H, 4H, 1D, 1W.
+  - **History:** Deep history support (3000 candles).
+  - **Sparklines:** Minimalist SVG charts in lists (Red/Green based on trend).
 
 ## 📝 TODO / Next Steps
-1. **Connect to New API:** Update `.env` with new server IP.
-2. **Screener UI:** Implement "Accordion" view for mobile-friendly data display.
-3. **WebSockets:** Move from Polling to WS for real-time feed.
+1. **[COMPLETED] Screener UI:** Accordion view with Sparklines.
+2. **[COMPLETED] Deep Charts:** Added more timeframes and history depth.
+3. **Alerts UI:** Interface for setting price alerts.
+4. **Portfolio:** Simple portfolio tracking.
