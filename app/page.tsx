@@ -9,9 +9,11 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useFilterStore } from "@/store/filterStore";
 import Link from "next/link";
 import { useCoins } from "@/hooks/useCoins";
+import { useScrollHaptic } from "@/hooks/useScrollHaptic";
 
 export default function ScreenerPage() {
   const { impact } = useHaptic();
+  useScrollHaptic(70); // Haptic tick every ~70px of scroll
   const { data: coins, isLoading: isQueryLoading } = useCoins();
   
   // Use global filter store
