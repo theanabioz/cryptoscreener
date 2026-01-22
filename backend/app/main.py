@@ -8,14 +8,18 @@ import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("--- LIFESPAN START ---", flush=True)
     # При старте подключаемся к БД
     await db.connect()
+    print(f"DB Connected. Redis is: {db.redis}", flush=True)
     
     # Запускаем мост Redis -> WebSocket
+    print("Starting Redis task...", flush=True)
     redis_task = asyncio.create_task(ws.start_redis_listener())
     
     yield
     
+    print("--- LIFESPAN SHUTDOWN ---", flush=True)
     # При выключении закрываем задачу и соединения
     redis_task.cancel()
     try:

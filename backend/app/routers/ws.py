@@ -52,22 +52,23 @@ async def start_redis_listener():
     """
     Фоновая задача: слушает Redis и пересылает сообщения в WebSockets
     """
-    print("Attempting to start Redis listener...")
+    print("Attempting to start Redis listener...", flush=True)
     if not db.redis:
-        print("❌ Redis not initialized in db object, WS listener cannot start")
+        print("❌ Redis not initialized in db object, WS listener cannot start", flush=True)
         return
         
     try:
         pubsub = db.redis.pubsub()
         await pubsub.subscribe("crypto_updates")
-        print("🎧 Redis -> WebSocket bridge started and subscribed to 'crypto_updates'")
+        print("🎧 Redis -> WebSocket bridge started and subscribed to 'crypto_updates'", flush=True)
         
         async for message in pubsub.listen():
             if message["type"] == "message":
-                # print(f"Bridge received: {message['data'][:50]}...")
+                # print(f"Bridge received: {message['data'][:50]}...", flush=True)
                 await manager.broadcast(message["data"])
     except Exception as e:
-        print(f"❌ Redis listener crashed: {e}")
+        print(f"❌ Redis listener crashed: {e}", flush=True)
     finally:
-        print("🛑 Redis listener stopped")
+        print("🛑 Redis listener stopped", flush=True)
+
 
