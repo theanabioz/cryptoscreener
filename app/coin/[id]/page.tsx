@@ -54,21 +54,8 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           ...coin,
           rsi: rsiSeries[lastIndex],
           ema50: emaSeries[lastIndex],
-          macd: macdData.histogram[lastIndex], // Histogram is usually what we display as value
-          macd_signal: 0, // We compare Histogram > 0? No, standard logic: MACD Line > Signal Line.
-          // Wait, TechnicalIndicators uses: macd (value) and macd_signal (signal). 
-          // Actually, our previous logic was: macd > macd_signal.
-          // In `ta_lib` (backend): returns macd, signal, hist.
-          // In `indicators.ts` (frontend): returns { macdLine, signalLine, histogram }.
-          // Let's align:
-          // The component expects `macd` to be the MAIN line or HISTOGRAM? 
-          // Usually 'MACD Value' is the Histogram height. 
-          // But for "Bullish/Bearish" status we compare MACD Line vs Signal Line.
-          // Let's pass MACD Line as 'macd' and Signal Line as 'macd_signal' to keep logic valid.
-          // OR pass Histogram as 'macd' (value) and check if Histogram > 0.
-          // Looking at TechnicalIndicators: const macdStatus = macdVal > macdSig ? 'Bullish' : 'Bearish';
-          // This implies macdVal is MACD Line and macdSig is Signal Line.
           
+          // TechnicalIndicators expects MACD Line and Signal Line for comparison
           macd: macdData.macdLine[lastIndex],
           macd_signal: macdData.signalLine[lastIndex],
           
