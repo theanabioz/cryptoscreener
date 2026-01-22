@@ -7,7 +7,8 @@ body {
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   overflow-x: hidden;
   width: 100%;
-  background-color: #171923; /* Chakra gray.900 - fixes white overscroll on iOS */
+  min-height: 100vh; /* Ensure body takes full height */
+  background-color: #171923 !important; /* Force dark background */
   color: white; /* Ensure text is visible if Chakra fails to load */
 }
 

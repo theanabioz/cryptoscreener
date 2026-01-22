@@ -25,8 +25,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // Prevent zoom on mobile inputs
+  userScalable: false,
   viewportFit: "cover",
+  themeColor: "#171923", // Chakra gray.900
 };
 
 export default function RootLayout({
