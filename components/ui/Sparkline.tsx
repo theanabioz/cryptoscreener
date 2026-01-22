@@ -23,7 +23,7 @@ export const Sparkline = ({ data, color = 'green.400', width = 60, height = 30 }
   }).join(' ');
 
   return (
-    <Box width={`${width}px`} height={`${height}px`}>
+    <Box width={`${width}px`} height={`${height}px`} color={color}>
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none">
         <polyline
           points={points}
@@ -32,8 +32,6 @@ export const Sparkline = ({ data, color = 'green.400', width = 60, height = 30 }
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          color={color} // Chakra handles this if we pass a theme color to the parent or use style
-          style={{ stroke: 'currentColor' }} 
         />
       </svg>
     </Box>

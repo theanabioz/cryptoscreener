@@ -11,7 +11,8 @@ export interface Kline {
 const fetchKlines = async (symbol: string, interval: string): Promise<Kline[]> => {
   // Ensure we request the full pair (e.g., BTC -> BTCUSDT)
   const pair = symbol.toUpperCase().includes('USDT') ? symbol : `${symbol}USDT`;
-  const res = await fetch(`/api/klines/${pair}?interval=${interval}&limit=500`);
+  // Increased limit to 3000 to cover ~3 months of hourly data (24 * 90 = 2160)
+  const res = await fetch(`/api/klines/${pair}?interval=${interval}&limit=3000`);
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }
