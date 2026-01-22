@@ -50,7 +50,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <Box pb="100px">
+    <Box pb="100px" overflowX="hidden" w="100vw">
       {/* Header */}
       <Box 
         position="sticky" 
