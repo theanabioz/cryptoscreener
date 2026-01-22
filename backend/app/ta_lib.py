@@ -3,10 +3,17 @@ import numpy as np
 
 def calculate_rsi(series, period=14):
     delta = series.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
     
-    rs = gain / loss
+    # Разделяем на gain и loss
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    
+    # Используем Wilder's Smoothing (alpha = 1/period)
+    # Это стандарт для RSI на TradingView/Binance
+    avg_gain = gain.ewm(alpha=1/period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/period, min_periods=period, adjust=False).mean()
+    
+    rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
 
 def calculate_ema(series, period=50):

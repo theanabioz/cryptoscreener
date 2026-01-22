@@ -104,6 +104,7 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "total_volume": row['volume_24h'] or 0,
                 "rsi": round(row['rsi_14'], 2) if row['rsi_14'] is not None else 50.0, 
                 "macd": round(row['macd'], 2) if row['macd'] is not None else 0,
+                "ema50": row['ema_50'],
                 "sparkline_in_7d": {
                     "price": row['sparkline'] or []
                 }
