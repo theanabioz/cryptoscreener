@@ -26,8 +26,8 @@ export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [hasPrefetched, setHasPrefetched] = useState(false);
 
-  // 1. Subscribe to live price updates
-  const liveData = usePriceStore((state) => state.getPrice(coin.symbol));
+  // 1. Subscribe to live price updates (Access directly for subscription)
+  const liveData = usePriceStore((state) => state.prices[coin.symbol]);
   
   // 2. Determine effective price
   const currentPrice = liveData?.c ?? coin.current_price ?? 0;

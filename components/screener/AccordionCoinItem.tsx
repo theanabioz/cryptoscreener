@@ -17,8 +17,8 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
   const { isOpen, onToggle } = useDisclosure();
   const { impact } = useHaptic();
   
-  // 1. Subscribe to live price updates
-  const liveData = usePriceStore((state) => state.getPrice(coin.symbol));
+  // 1. Subscribe to live price updates (Access directly for subscription)
+  const liveData = usePriceStore((state) => state.prices[coin.symbol]);
   
   // 2. Determine effective price
   const currentPrice = liveData?.c ?? coin.current_price;
