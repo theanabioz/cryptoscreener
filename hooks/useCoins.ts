@@ -20,7 +20,9 @@ export const useCoins = (ids?: string, strategy?: string) => {
   return useQuery({
     queryKey: ['coins', ids, strategy],
     queryFn: () => fetchCoins(ids, strategy),
-    staleTime: 1000, 
+    // Increase staleTime so that data is considered fresh during navigation.
+    // This makes "back" navigation instant. refetchInterval will still keep prices live.
+    staleTime: 1000 * 30, 
     refetchInterval: 1000, 
     retry: 2,
   });

@@ -14,20 +14,11 @@ export default function ScreenerPage() {
   const { impact } = useHaptic();
   const { data: coins, isLoading: isQueryLoading } = useCoins();
   
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  
   // Use global filter store
   const { filters, setFilters, activeFilterCount } = useFilterStore();
 
-  // Simulate initial UI fetch delay for smooth skeleton transition
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const isLoading = isInitialLoading || isQueryLoading;
+  // isLoading in TanStack Query v5 is true only when there is no data in cache
+  const isLoading = isQueryLoading && !coins;
 
   const filteredCoins = useMemo(() => {
     if (!coins) return [];
