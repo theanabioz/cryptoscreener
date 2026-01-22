@@ -42,7 +42,10 @@ async def get_coins(ids: str = None, strategy: str = None):
             ld.*,
             cs.rsi_14,
             cs.macd,
+            cs.macd_signal,
             cs.ema_50,
+            cs.bb_upper,
+            cs.bb_lower,
             cs.market_cap,
             cs.cmc_id,
             sp.sparkline
@@ -104,7 +107,10 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "total_volume": row['volume_24h'] or 0,
                 "rsi": round(row['rsi_14'], 2) if row['rsi_14'] is not None else 50.0, 
                 "macd": round(row['macd'], 2) if row['macd'] is not None else 0,
+                "macd_signal": round(row['macd_signal'], 2) if row['macd_signal'] is not None else 0,
                 "ema50": row['ema_50'],
+                "bb_upper": row['bb_upper'],
+                "bb_lower": row['bb_lower'],
                 "sparkline_in_7d": {
                     "price": row['sparkline'] or []
                 }

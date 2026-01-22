@@ -8,7 +8,10 @@ export interface Coin {
   total_volume: number;
   rsi?: number;
   macd?: number;
+  macd_signal?: number;
   ema50?: number;
+  bb_upper?: number;
+  bb_lower?: number;
   bb_pos?: string;
   trend?: string;
   sparkline_in_7d?: {
