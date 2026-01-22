@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useHaptic } from './useHaptic';
 
 export const useScrollHaptic = (threshold: number = 50) => {
-  const { selectionChanged } = useHaptic();
+  const { selection } = useHaptic();
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
@@ -14,7 +14,7 @@ export const useScrollHaptic = (threshold: number = 50) => {
       if (diff >= threshold) {
         if (!ticking.current) {
           window.requestAnimationFrame(() => {
-            selectionChanged();
+            selection();
             lastScrollY.current = currentScrollY;
             ticking.current = false;
           });
@@ -28,5 +28,5 @@ export const useScrollHaptic = (threshold: number = 50) => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [threshold, selectionChanged]);
+  }, [threshold, selection]);
 };
