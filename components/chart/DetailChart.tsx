@@ -51,6 +51,8 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         timeVisible: true,
         secondsVisible: false,
         borderVisible: false,
+        barSpacing: 12, // Оптимальная ширина для мобильных (влезет ~30-40 свечей)
+        rightOffset: 2,
       },
       rightPriceScale: {
         borderVisible: false,
@@ -88,7 +90,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
   useEffect(() => {
     if (seriesRef.current && klines && klines.length > 0) {
       seriesRef.current.setData(klines as any);
-      chartRef.current?.timeScale().fitContent();
+      // chartRef.current?.timeScale().fitContent(); // Удалено для сохранения масштаба
     }
   }, [klines]);
 
