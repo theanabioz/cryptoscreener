@@ -96,19 +96,52 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
 
   // Real-time chart update
   useEffect(() => {
-    if (seriesRef.current && klines && klines.length > 0 && basePrice) {
-      const lastCandle = klines[klines.length - 1];
-      // Ensure we don't update if basePrice is wildly different (e.g. initial load glitch)
-      // or if timestamps don't align. But for now, simple update.
-      const updatedCandle = {
-        ...lastCandle,
-        close: basePrice,
-        high: Math.max(lastCandle.high, basePrice),
-        low: Math.min(lastCandle.low, basePrice),
-      };
-      seriesRef.current.update(updatedCandle as any);
+    if (seriesRef.current && basePrice) {
+      // Get current time in seconds (matching Lightweight Charts format)
+      const now = Math.floor(Date.now() / 1000);
+      
+      // Determine candle time based on timeframe
+      // For simplicity, we just use the current minute/hour start
+      // but 'update' method handles timestamp matching automatically.
+      // If timestamp exists, it updates. If it's new, it adds.
+      
+      let candleTime: number;
+      const lastK = klines && klines.length > 0 ? klines[klines.length - 1] : null;
+      
+      // We try to align with the current timeframe bucket
+      if (activeTf.includes('M')) {
+          const mins = parseInt(activeTf);
+          candleTime = Math.floor(now / (mins * 60)) * (mins * 60);
+      } else if (activeTf.includes('H')) {
+          const hours = parseInt(activeTf);
+          candleTime = Math.floor(now / (hours * 3600)) * (hours * 3600);
+      } else if (activeTf.includes('D')) {
+          candleTime = Math.floor(now / 86400) * 86400;
+      } else {
+          candleTime = now;
+      }
+
+      // If we are updating the SAME candle as the last one in history
+      if (lastK && lastK.time === candleTime) {
+          seriesRef.current.update({
+            time: candleTime as any,
+            open: lastK.open,
+            high: Math.max(lastK.high, basePrice),
+            low: Math.min(lastK.low, basePrice),
+            close: basePrice,
+          });
+      } else {
+          // It's a new candle (time bucket changed)
+          seriesRef.current.update({
+            time: candleTime as any,
+            open: basePrice,
+            high: basePrice,
+            low: basePrice,
+            close: basePrice,
+          });
+      }
     }
-  }, [basePrice, klines]); // Depend on basePrice updates
+  }, [basePrice, activeTf]); // Remove klines from dependency to avoid resetting on history load
 
   return (
     <Box w="full">

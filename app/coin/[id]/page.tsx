@@ -15,6 +15,7 @@ import { useKlines, fetchKlines } from '@/hooks/useKlines';
 import { PriceFlash } from '@/components/ui/PriceFlash';
 import { calculateRSI, calculateMACD, calculateEMA, calculateBollinger } from '@/lib/indicators';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePriceStore } from '@/store/usePriceStore';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -27,6 +28,9 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   const { impact, notification } = useHaptic();
   const { toggleCoin, favorites } = useWatchlistStore();
   const { data: coins } = useCoins();
+  
+  // 1. Subscribe to live price updates
+  const liveData = usePriceStore((state) => state.prices[coins?.find(c => c.id === id)?.symbol || '']);
   
   // State for Timeframe and History Limit
   const [activeTf, setActiveTf] = useState('1H');
@@ -41,6 +45,15 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   // Find coin in loaded data
   const coin = coins?.find(c => c.id === id);
   const symbol = coin?.symbol || '';
+
+  // 2. Determine effective current price and change
+  const currentPrice = liveData?.c ?? coin?.current_price ?? 0;
+  
+  let priceChange = coin?.price_change_percentage_24h ?? 0;
+  if (liveData && coin?.current_price && coin.current_price !== 0) {
+      const open24h = coin.current_price / (1 + (coin.price_change_percentage_24h / 100));
+      priceChange = ((currentPrice - open24h) / open24h) * 100;
+  }
 
   // Prefetch neighboring timeframes for instant switching UX
   useEffect(() => {
@@ -78,7 +91,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
 
   // Calculate Indicators dynamically based on Klines
   const dynamicIndicators = useMemo(() => {
-      if (!klines || klines.length < 50) return coin || {}; // Fallback to static data if not enough klines
+      if (!klines || klines.length < 50) return { ...coin, current_price: currentPrice } || {}; // Fallback to static data if not enough klines
 
       const closePrices = klines.map(k => k.close);
       
@@ -101,9 +114,9 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           bb_upper: bbData.upper[lastIndex],
           bb_lower: bbData.lower[lastIndex],
           // Current price from klines to match indicators
-          current_price: closePrices[lastIndex] 
+          current_price: currentPrice 
       };
-  }, [klines, coin]);
+  }, [klines, coin, currentPrice]);
 
   // Check if favorite
   const isFav = favorites.includes(id);
@@ -117,7 +130,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
   
-  const isPositive = (coin?.price_change_percentage_24h || 0) >= 0;
+  const isPositive = priceChange >= 0;
 
   if (!coin) {
     return (
@@ -152,7 +165,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
         <HStack align="center" spacing={3}>
            <Image src={coin.image} boxSize="40px" alt={coin.name} />
            <VStack align="start" spacing={-1}>
-             <PriceFlash price={coin.current_price} fontSize="3xl" fontWeight="bold" />
+             <PriceFlash price={currentPrice} fontSize="3xl" fontWeight="bold" />
            </VStack>
         </HStack>
           
@@ -177,7 +190,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           alignItems="center"
         >
           {isPositive ? <TrendingUp size={16} style={{marginRight: '4px'}}/> : <TrendingDown size={16} style={{marginRight: '4px'}}/>}
-          {Math.abs(coin.price_change_percentage_24h).toFixed(2)}% (24h)
+          {Math.abs(priceChange).toFixed(2)}% (24h)
         </Badge>
       </VStack>
 
@@ -186,7 +199,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
         <DetailChart 
           coinId={coin.id} 
           symbol={coin.symbol} 
-          basePrice={coin.current_price} 
+          basePrice={currentPrice} 
           isPositive={isPositive}
           klines={klines}
           isLoading={isChartLoading && !isPlaceholderData} // Only show spinner on initial hard load
@@ -208,11 +221,11 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
         </Stat>
         <Stat bg="gray.800" p={3} borderRadius="lg">
           <StatLabel color="gray.400">High (24h)</StatLabel>
-          <StatNumber fontSize="md">${(coin.current_price * 1.05).toFixed(2)}</StatNumber>
+          <StatNumber fontSize="md">${(currentPrice * 1.05).toFixed(2)}</StatNumber>
         </Stat>
         <Stat bg="gray.800" p={3} borderRadius="lg">
           <StatLabel color="gray.400">Low (24h)</StatLabel>
-          <StatNumber fontSize="md">${(coin.current_price * 0.95).toFixed(2)}</StatNumber>
+          <StatNumber fontSize="md">${(currentPrice * 0.95).toFixed(2)}</StatNumber>
         </Stat>
       </SimpleGrid>
 
