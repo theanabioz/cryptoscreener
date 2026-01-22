@@ -105,41 +105,28 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       // but 'update' method handles timestamp matching automatically.
       // If timestamp exists, it updates. If it's new, it adds.
       
-      let candleTime: number;
-      const lastK = klines && klines.length > 0 ? klines[klines.length - 1] : null;
-      
-      // We try to align with the current timeframe bucket
-      if (activeTf.includes('M')) {
-          const mins = parseInt(activeTf);
-          candleTime = Math.floor(now / (mins * 60)) * (mins * 60);
-      } else if (activeTf.includes('H')) {
-          const hours = parseInt(activeTf);
-          candleTime = Math.floor(now / (hours * 3600)) * (hours * 3600);
-      } else if (activeTf.includes('D')) {
-          candleTime = Math.floor(now / 86400) * 86400;
-      } else {
-          candleTime = now;
-      }
+      const lastK = historyData[historyData.length - 1];
+      const candleTime = Math.floor(Date.now() / 60000) * 60; // Current minute bucket
 
-      // If we are updating the SAME candle as the last one in history
-      if (lastK && lastK.time === candleTime) {
-          seriesRef.current.update({
-            time: candleTime as any,
-            open: lastK.open,
-            high: Math.max(lastK.high, basePrice),
-            low: Math.min(lastK.low, basePrice),
-            close: basePrice,
-          });
-      } else if (lastK) {
-          // It's a new candle (time bucket changed). 
-          // Open price MUST be equal to last candle's close price.
-          seriesRef.current.update({
-            time: candleTime as any,
-            open: lastK.close,
-            high: Math.max(lastK.close, basePrice),
-            low: Math.min(lastK.close, basePrice),
-            close: basePrice,
-          });
+      if (lastK && candleTime === lastK.time) {
+        // Updating current existing candle
+        seriesRef.current.update({
+          time: lastK.time as any,
+          open: lastK.open,
+          high: Math.max(lastK.high, basePrice),
+          low: Math.min(lastK.low, basePrice),
+          close: basePrice,
+        });
+      } else if (lastK && candleTime > lastK.time) {
+        // Creating a new live candle
+        // The key is: OPEN must be equal to PREVIOUS CLOSE
+        seriesRef.current.update({
+          time: candleTime as any,
+          open: lastK.close,
+          high: Math.max(lastK.close, basePrice),
+          low: Math.min(lastK.close, basePrice),
+          close: basePrice,
+        });
       }
     }
   }, [basePrice, activeTf]); // Remove klines from dependency to avoid resetting on history load
