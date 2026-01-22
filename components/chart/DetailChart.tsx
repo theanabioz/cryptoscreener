@@ -29,13 +29,12 @@ interface DetailChartProps {
 
 export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isLoading, isError, activeTf, onTfChange }: DetailChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
+  // 1. Initialize Chart ONCE
   useEffect(() => {
-    if (!chartContainerRef.current || !klines || klines.length === 0) return;
-
-    // Clean up previous chart if any (manual DOM cleanup to be sure)
-    chartContainerRef.current.innerHTML = '';
+    if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -51,6 +50,10 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        borderVisible: false,
+      },
+      rightPriceScale: {
+        borderVisible: false,
       },
     });
 
@@ -62,10 +65,8 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       wickDownColor: '#F56565',
     });
     
-    candlestickSeries.setData(klines as any);
+    chartRef.current = chart;
     seriesRef.current = candlestickSeries;
-    
-    chart.timeScale().fitContent();
 
     const handleResize = () => {
       if (chartContainerRef.current) {
@@ -78,13 +79,25 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
     return () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
     };
-  }, [klines]); // Re-run when data changes (tf change triggers klines change)
+  }, []); // Run once on mount
+
+  // 2. Update Data when klines change
+  useEffect(() => {
+    if (seriesRef.current && klines && klines.length > 0) {
+      seriesRef.current.setData(klines as any);
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [klines]);
 
   // Real-time chart update
   useEffect(() => {
     if (seriesRef.current && klines && klines.length > 0 && basePrice) {
       const lastCandle = klines[klines.length - 1];
+      // Ensure we don't update if basePrice is wildly different (e.g. initial load glitch)
+      // or if timestamps don't align. But for now, simple update.
       const updatedCandle = {
         ...lastCandle,
         close: basePrice,
@@ -93,7 +106,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       };
       seriesRef.current.update(updatedCandle as any);
     }
-  }, [basePrice, klines]);
+  }, [basePrice, klines]); // Depend on basePrice updates
 
   return (
     <Box w="full">
