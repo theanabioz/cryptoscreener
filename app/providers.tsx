@@ -47,8 +47,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand(); // Open full height
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand(); // Open full height
+      
+      // Set Telegram colors to match our Dark Theme (gray.900 = #171923)
+      // This fixes the white overscroll/bounce areas on iOS
+      try {
+        tg.setHeaderColor('#171923');
+        tg.setBackgroundColor('#171923');
+      } catch (e) {
+        console.error('Failed to set Telegram colors', e);
+      }
     }
   }, []);
 
