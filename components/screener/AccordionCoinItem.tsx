@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, ChevronDown, ChevronUp, BarChart2, Activity }
 import { PriceFlash } from '../ui/PriceFlash'
 import { useHaptic } from '@/hooks/useHaptic'
 import Link from 'next/link'
+import { Sparkline } from '../ui/Sparkline'
 
 interface AccordionCoinItemProps {
   coin: Coin;
@@ -48,56 +49,64 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
         cursor="pointer"
       >
         {/* Left: Icon + Name */}
-        <HStack spacing={3} w="45%">
+        <HStack spacing={3} w="35%">
           <Image 
             src={coin.image} 
             alt={coin.name} 
-            boxSize="36px" 
+            boxSize="32px" 
             borderRadius="full" 
             fallbackSrc="https://via.placeholder.com/32"
           />
           <VStack align="start" spacing={0} overflow="hidden">
-            <HStack>
-                <Text fontWeight="bold" fontSize="md" color="white">
+            <HStack spacing={1}>
+                <Text fontWeight="bold" fontSize="sm" color="white">
                 {coin.symbol.toUpperCase()}
                 </Text>
-                {/* Trend Badge in Header if available */}
                 {isBullish !== null && (
                     <Badge 
                         colorScheme={isBullish ? 'green' : 'red'} 
                         variant="subtle" 
-                        fontSize="xx-small" 
+                        fontSize="8px" 
                         px={1}
-                        h="14px"
                     >
-                        {isBullish ? 'BULL' : 'BEAR'}
+                        {isBullish ? 'UP' : 'DN'}
                     </Badge>
                 )}
             </HStack>
-            <Text fontSize="xs" color="gray.500" isTruncated>{coin.name}</Text>
+            <Text fontSize="10px" color="gray.500" isTruncated>{coin.name}</Text>
           </VStack>
         </HStack>
 
+        {/* Center: Sparkline */}
+        <Flex w="30%" justify="center" align="center">
+           <Sparkline 
+              data={coin.sparkline_in_7d?.price || []} 
+              width={70} 
+              height={25} 
+              color={isPositive ? 'green.400' : 'red.400'} 
+           />
+        </Flex>
+
         {/* Right: Price + Change + Chevron */}
-        <HStack spacing={3} w="55%" justify="flex-end">
+        <HStack spacing={2} w="35%" justify="flex-end">
           <VStack align="end" spacing={0}>
             <PriceFlash price={coin.current_price} color="white" fontWeight="bold" fontSize="sm" />
             <Badge 
               colorScheme={badgeColor} 
               variant="solid" 
-              fontSize="xs"
+              fontSize="10px"
               borderRadius="sm"
-              px={1.5}
+              px={1}
               display="flex"
               alignItems="center"
             >
-              {isPositive ? <TrendingUp size={12} style={{marginRight: '3px'}}/> : <TrendingDown size={12} style={{marginRight: '3px'}}/>}
-              {Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+              {isPositive ? <TrendingUp size={10} style={{marginRight: '2px'}}/> : <TrendingDown size={10} style={{marginRight: '2px'}}/>}
+              {Math.abs(coin.price_change_percentage_24h).toFixed(1)}%
             </Badge>
           </VStack>
           
-          <Box color="gray.500">
-            {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          <Box color="gray.600">
+            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </Box>
         </HStack>
       </Flex>

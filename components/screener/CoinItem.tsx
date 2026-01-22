@@ -58,23 +58,14 @@ export const CoinItem = ({ coin }: CoinItemProps) => {
             </VStack>
           </HStack>
 
-          {/* Middle: RSI / Trend */}
-          <Box w="30%" display="flex" justifyContent="center" flexDirection="column" alignItems="center">
-            {coin.rsi ? (
-               <>
-                 <Text fontSize="10px" color="gray.500" fontWeight="bold">RSI</Text>
-                 <Text 
-                   fontSize="xs" 
-                   fontWeight="bold"
-                   color={coin.rsi > 70 ? 'red.400' : coin.rsi < 30 ? 'green.400' : 'gray.300'}
-                 >
-                   {coin.rsi}
-                 </Text>
-               </>
-            ) : (
-               // Placeholder or Sparkline if we had it
-               <Box w="40px" h="1px" bg="gray.800" />
-            )}
+          {/* Middle: Sparkline */}
+          <Box w="30%" display="flex" justifyContent="center" alignItems="center">
+            <Sparkline 
+              data={coin.sparkline_in_7d?.price || []} 
+              width={80} 
+              height={30} 
+              color={isPositive ? 'green.400' : 'red.400'} 
+            />
           </Box>
 
           {/* Right: Price + Change */}

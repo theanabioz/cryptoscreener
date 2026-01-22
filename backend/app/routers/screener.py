@@ -22,14 +22,31 @@ async def get_coins(ids: str = None, strategy: str = None):
             FROM candles
             WHERE time > NOW() - INTERVAL '3 days'
             GROUP BY symbol
+        ),
+        sparklines AS (
+             SELECT 
+                symbol,
+                array_agg(close ORDER BY bucket) as sparkline
+             FROM (
+                SELECT 
+                    symbol,
+                    time_bucket('1 hour', time) as bucket,
+                    LAST(close, time) as close
+                FROM candles
+                WHERE time > NOW() - INTERVAL '24 hours'
+                GROUP BY symbol, bucket
+             ) sub
+             GROUP BY symbol
         )
         SELECT 
             ld.*,
             cs.rsi_14,
             cs.macd,
-            cs.ema_50
+            cs.ema_50,
+            sp.sparkline
         FROM latest_data ld
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
+        LEFT JOIN sparklines sp ON ld.symbol = sp.symbol
         WHERE 1=1
     """
     
@@ -77,7 +94,10 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "market_cap": 0,
                 "total_volume": row['volume_24h'] or 0,
                 "rsi": row['rsi_14'] or 50.0, 
-                "macd": row['macd'] or 0
+                "macd": row['macd'] or 0,
+                "sparkline_in_7d": {
+                    "price": row['sparkline'] or []
+                }
             })
             
         return result
