@@ -8,22 +8,22 @@ export interface Kline {
   close: number;
 }
 
-const fetchKlines = async (symbol: string, interval: string): Promise<Kline[]> => {
+const fetchKlines = async (symbol: string, interval: string, limit: number): Promise<Kline[]> => {
   // Ensure we request the full pair (e.g., BTC -> BTCUSDT)
   const pair = symbol.toUpperCase().includes('USDT') ? symbol : `${symbol}USDT`;
-  // Increased limit to 3000 to cover ~3 months of hourly data (24 * 90 = 2160)
-  const res = await fetch(`/api/klines/${pair}?interval=${interval}&limit=3000`);
+  const res = await fetch(`/api/klines/${pair}?interval=${interval}&limit=${limit}`);
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }
   return res.json();
 };
 
-export const useKlines = (symbol: string, interval: string) => {
+export const useKlines = (symbol: string, interval: string, limit: number = 3000) => {
   return useQuery({
-    queryKey: ['klines', symbol, interval],
-    queryFn: () => fetchKlines(symbol, interval),
+    queryKey: ['klines', symbol, interval, limit],
+    queryFn: () => fetchKlines(symbol, interval, limit),
     staleTime: 1000 * 60, // 1 minute
     enabled: !!symbol, // Only fetch if symbol exists
+    placeholderData: (previousData) => previousData, // Keep showing old data while fetching new (prevents flickering)
   });
 };

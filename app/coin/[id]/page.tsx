@@ -26,8 +26,15 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   const { toggleCoin, favorites } = useWatchlistStore();
   const { data: coins } = useCoins();
   
-  // State for Timeframe
+  // State for Timeframe and History Limit
   const [activeTf, setActiveTf] = useState('1H');
+  const [historyLimit, setHistoryLimit] = useState(200); // Start with small payload
+  
+  // Reset limit when timeframe changes to ensure fast load
+  const handleTfChange = (newTf: string) => {
+      setActiveTf(newTf);
+      setHistoryLimit(200);
+  };
   
   // Find coin in loaded data
   const coin = coins?.find(c => c.id === id);
@@ -35,7 +42,18 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
 
   // Load Klines for Chart and Indicators
   const apiInterval = activeTf.toLowerCase();
-  const { data: klines, isLoading: isChartLoading, isError: isChartError } = useKlines(symbol, apiInterval);
+  const { data: klines, isLoading: isChartLoading, isError: isChartError, isPlaceholderData } = useKlines(symbol, apiInterval, historyLimit);
+
+  // Progressive Loading Effect
+  // Once initial data (200) is loaded, fetch full history (3000) in background
+  useEffect(() => {
+      if (klines && klines.length >= 100 && historyLimit === 200 && !isChartLoading) {
+          const timer = setTimeout(() => {
+              setHistoryLimit(3000);
+          }, 1000); // Wait 1s after render before fetching heavy history
+          return () => clearTimeout(timer);
+      }
+  }, [klines, historyLimit, isChartLoading]);
 
   // Calculate Indicators dynamically based on Klines
   const dynamicIndicators = useMemo(() => {
@@ -150,10 +168,10 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           basePrice={coin.current_price} 
           isPositive={isPositive}
           klines={klines}
-          isLoading={isChartLoading}
+          isLoading={isChartLoading && !isPlaceholderData} // Only show spinner on initial hard load
           isError={isChartError}
           activeTf={activeTf}
-          onTfChange={setActiveTf}
+          onTfChange={handleTfChange}
         />
       </Box>
 
