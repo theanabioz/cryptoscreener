@@ -35,18 +35,18 @@ class DatabasePool:
         # Redis Connection
         if not self.redis:
             try:
-                self.redis = redis.Redis(
+                r = redis.Redis(
                     host=REDIS_HOST, 
                     port=6379, 
                     decode_responses=True
                 )
-                # Проверка связи
-                await self.redis.ping()
+                await r.ping()
+                self.redis = r
                 print(f"✅ Connected to Redis at {REDIS_HOST}")
             except Exception as e:
                 print(f"❌ Redis connection failed: {e}")
-                # Не роняем приложение, если Redis недоступен (хотя для WS это критично)
-                pass
+                self.redis = None # Явно сбрасываем
+
 
     async def close(self):
         if self.pool:
