@@ -25,7 +25,7 @@ export const useWebSocket = () => {
       ws.current = socket;
 
       socket.onopen = () => {
-        console.log('✅ WS Connected');
+        console.log('✅ WS Connected to:', WS_URL);
       };
 
       socket.onmessage = (event) => {
@@ -33,7 +33,9 @@ export const useWebSocket = () => {
           const data = JSON.parse(event.data);
           // Expected format: { s: "BTC/USDT", k: [t, o, h, l, c, v] }
           if (data.s && data.k) {
-            updatePrice(data.s, data.k);
+            // Strip /USDT to match frontend symbol (e.g. "BTC/USDT" -> "BTC")
+            const cleanSymbol = data.s.split('/')[0];
+            updatePrice(cleanSymbol, data.k);
           }
         } catch (e) {
           console.error('WS Parse Error', e);
