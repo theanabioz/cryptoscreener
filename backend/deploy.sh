@@ -41,7 +41,7 @@ docker exec crypto_db psql -U $POSTGRES_USER -c "ALTER USER $POSTGRES_USER WITH 
 # 6. ЗАКРЫТИЕ ДЫР В ДАННЫХ (Gap Filler)
 echo "📥 Running Gap Filler to fetch missing candles..."
 # Запускаем в контексте контейнера api, так как там есть все зависимости и доступ к БД
-docker compose run --rm api python3 /app/../collector/fill_gaps.py
+docker compose run --rm api python3 fill_gaps.py
 
 # 7. Запускаем всё остальное с пересборкой
 echo "🏗 Building and Starting Services..."
