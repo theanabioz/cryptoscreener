@@ -18,12 +18,12 @@ const fetchKlines = async (symbol: string, interval: string, limit: number): Pro
   return res.json();
 };
 
-export const useKlines = (symbol: string, interval: string, limit: number = 3000) => {
+export const useKlines = (symbol: string, interval: string, limit: number = 3000, enablePlaceholder: boolean = true) => {
   return useQuery({
     queryKey: ['klines', symbol, interval, limit],
     queryFn: () => fetchKlines(symbol, interval, limit),
     staleTime: 1000 * 60, // 1 minute
     enabled: !!symbol, // Only fetch if symbol exists
-    placeholderData: (previousData) => previousData, // Keep showing old data while fetching new (prevents flickering)
+    placeholderData: (previousData) => enablePlaceholder ? previousData : undefined, 
   });
 };

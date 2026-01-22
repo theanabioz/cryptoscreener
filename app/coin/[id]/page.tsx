@@ -42,7 +42,9 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
 
   // Load Klines for Chart and Indicators
   const apiInterval = activeTf.toLowerCase();
-  const { data: klines, isLoading: isChartLoading, isError: isChartError, isPlaceholderData } = useKlines(symbol, apiInterval, historyLimit);
+  // Enable placeholder only when fetching heavy history (limit > 200), 
+  // so switching timeframes (limit=200) shows a loading state immediately.
+  const { data: klines, isLoading: isChartLoading, isError: isChartError, isPlaceholderData } = useKlines(symbol, apiInterval, historyLimit, historyLimit > 200);
 
   // Progressive Loading Effect
   // Once initial data (200) is loaded, fetch full history (3000) in background
