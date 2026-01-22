@@ -77,7 +77,6 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
             alt={coin.name} 
             boxSize="32px" 
             borderRadius="full" 
-            fallbackSrc="https://via.placeholder.com/32"
           />
           <VStack align="start" spacing={0} overflow="hidden">
             <HStack spacing={1}>

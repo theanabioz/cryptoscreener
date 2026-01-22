@@ -81,11 +81,8 @@ async def get_coins(ids: str = None, strategy: str = None):
             if row['cmc_id']:
                 image_url = f"https://s2.coinmarketcap.com/static/img/coins/64x64/{row['cmc_id']}.png"
             else:
-                # Fallback на статический список или плейсхолдер
-                symbol_only = row['symbol'].split('/')[0].lower()
-                image_url = f"https://s2.coinmarketcap.com/static/img/coins/64x64/1.png" # Плейсхолдер (BTC) или можно пустой
-                # Попробуем сконструировать поиск по символу если нет ID
-                # Но лучше оставить CMC как основной источник.
+                # Если ID нет, используем общую заглушку (логотип BTC как fallback)
+                image_url = "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png"
             
             # Спарклайн
             sparkline_final = {"price": []}

@@ -102,7 +102,6 @@ export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
               alt={coin.name} 
               boxSize="32px" 
               borderRadius="full" 
-              fallbackSrc="https://via.placeholder.com/32"
             />
             <VStack align="start" spacing={0} overflow="hidden">
               <Text fontWeight="bold" fontSize="sm" color="white" isTruncated maxW="full">
