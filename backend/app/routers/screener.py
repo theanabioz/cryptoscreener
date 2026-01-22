@@ -43,6 +43,7 @@ async def get_coins(ids: str = None, strategy: str = None):
             cs.rsi_14,
             cs.macd,
             cs.ema_50,
+            cs.market_cap,
             sp.sparkline
         FROM latest_data ld
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
@@ -91,7 +92,7 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "image": f"https://assets.coincap.io/assets/icons/{row['symbol'].split('/')[0].lower()}@2x.png",
                 "current_price": price,
                 "price_change_percentage_24h": round(change_pct, 2),
-                "market_cap": 0,
+                "market_cap": row['market_cap'] or 0,
                 "total_volume": row['volume_24h'] or 0,
                 "rsi": round(row['rsi_14'], 2) if row['rsi_14'] is not None else 50.0, 
                 "macd": round(row['macd'], 2) if row['macd'] is not None else 0,
