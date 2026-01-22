@@ -39,6 +39,12 @@ export const TechnicalIndicators = ({ coinData, timeframe = '1H' }: TechnicalInd
   const macdStatus = macdVal > macdSig ? 'Bullish' : 'Bearish';
   const macdColor = macdVal > macdSig ? 'green' : 'red';
 
+  // RSI Logic
+  let rsiStatus = 'Neutral';
+  let rsiColor = 'gray';
+  if (rsi > 70) { rsiStatus = 'Overbought'; rsiColor = 'red'; }
+  else if (rsi < 30) { rsiStatus = 'Oversold'; rsiColor = 'green'; }
+
   // EMA Logic
   const emaStatus = currentPrice > ema50 ? 'Above' : 'Below';
   const emaColor = currentPrice > ema50 ? 'green' : 'red';
