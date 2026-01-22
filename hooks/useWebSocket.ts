@@ -5,20 +5,19 @@ const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws';
 
 export const useWebSocket = () => {
   const ws = useRef<WebSocket | null>(null);
-  const updatePrice = usePriceStore((state) => state.updatePrice);
+  const bulkUpdate = usePriceStore((state) => state.bulkUpdate);
+  const buffer = useRef<Record<string, number[]>>({});
 
   useEffect(() => {
     let isMounted = true;
     let reconnectTimeout: NodeJS.Timeout;
+    let flushInterval: NodeJS.Timeout;
 
     const connect = () => {
       if (!isMounted) return;
       if (ws.current?.readyState === WebSocket.OPEN) return;
 
-      // Close existing if any (avoid dupes)
-      if (ws.current) {
-        ws.current.close();
-      }
+      if (ws.current) ws.current.close();
 
       console.log('🔌 Connecting to WS:', WS_URL);
       const socket = new WebSocket(WS_URL);
@@ -28,22 +27,13 @@ export const useWebSocket = () => {
         console.log('✅ WS Connected to:', WS_URL);
       };
 
-      let messageCount = 0;
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          // Expected format: { s: "BTC/USDT", k: [t, o, h, l, c, v] }
           if (data.s && data.k) {
-            // Strip /USDT to match frontend symbol (e.g. "BTC/USDT" -> "BTC")
             const cleanSymbol = data.s.split('/')[0];
-            
-            // Debug: log every 100th message
-            messageCount++;
-            if (messageCount % 100 === 0) {
-                console.log(`📡 WS Update [${messageCount}]:`, cleanSymbol, data.k[4]);
-            }
-
-            updatePrice(cleanSymbol, data.k);
+            // Accumulate in buffer
+            buffer.current[cleanSymbol] = data.k;
           }
         } catch (e) {
           console.error('WS Parse Error', e);
@@ -57,20 +47,26 @@ export const useWebSocket = () => {
         }
       };
 
-      socket.onerror = (err) => {
-         console.error('WS Error:', err);
-         socket.close(); // Ensure close is triggered to start reconnection
+      socket.onerror = () => {
+         socket.close();
       };
     };
+
+    // Periodically flush buffer to store (2 times per second)
+    flushInterval = setInterval(() => {
+        if (Object.keys(buffer.current).length > 0) {
+            bulkUpdate(buffer.current);
+            buffer.current = {}; // Clear buffer
+        }
+    }, 500);
 
     connect();
 
     return () => {
       isMounted = false;
       clearTimeout(reconnectTimeout);
-      if (ws.current) {
-        ws.current.close();
-      }
+      clearInterval(flushInterval);
+      if (ws.current) ws.current.close();
     };
-  }, [updatePrice]);
+  }, [bulkUpdate]);
 };
