@@ -37,9 +37,12 @@ export const TechnicalIndicators = ({ coinData }: TechnicalIndicatorsProps) => {
   if (rsi > 70) { rsiStatus = 'Overbought'; rsiColor = 'red'; }
   else if (rsi < 30) { rsiStatus = 'Oversold'; rsiColor = 'green'; }
 
-  // MACD Logic
-  const macdStatus = macd > 0 ? 'Bullish' : 'Bearish';
-  const macdColor = macd > 0 ? 'green' : 'red';
+  // MACD Logic (Compare MACD line vs Signal line)
+  // If macd > signal -> Bullish momentum
+  const macdVal = coinData.macd ?? 0;
+  const macdSig = coinData.macd_signal ?? 0;
+  const macdStatus = macdVal > macdSig ? 'Bullish' : 'Bearish';
+  const macdColor = macdVal > macdSig ? 'green' : 'red';
 
   // EMA Logic
   const emaStatus = currentPrice > ema50 ? 'Above' : 'Below';
