@@ -1,153 +1,130 @@
 import asyncio
 import pandas as pd
 import json
+import logging
 from database import db
 from ta_lib import calculate_rsi, calculate_ema, calculate_macd, calculate_bollinger
 import time
 
-async def process_batch(symbols):
-    """
-    Берет пачку символов, качает для них историю, считает индикаторы и сохраняет.
-    """
-    if not symbols:
-        return
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-    # 1. Получаем свечи (последние 200 штук для точности индикаторов)
-    # Используем time_bucket('1h') для часовых индикаторов (или 15m, как решим)
-    # Для скринера обычно смотрят 1H или 4H. Давайте начнем с 1H.
+async def update_all_indicators():
+    """
+    Тяжелая задача: берет данные для всех монет и считает индикаторы.
+    Оптимизировано: меньше запросов к БД.
+    """
+    logger.info("🔄 Starting TA Calculation Cycle...")
     
-    total = len(symbols)
-    for i, symbol in enumerate(symbols):
-        try:
-            if (i + 1) % 10 == 0 or i == 0:
-                print(f"[{i+1}/{total}] Processing {symbol}...")
-            
-            # Получаем 200 последних часовых свечей
-            # (Код похож на klines.py, но внутри python)
-            query = """
-                SELECT 
-                    time_bucket('1h', time) AS time,
-                    LAST(close, time) as close,
-                    SUM(volume) as volume
-                FROM candles
-                WHERE symbol = $1
-                GROUP BY time
-                ORDER BY time DESC
-                LIMIT 200
-            """
-            rows = await db.fetch_all(query, symbol)
-            
-            if not rows or len(rows) < 24: # Минимум 24 для спарклайна
-                continue
-
-            # Превращаем в DataFrame и сортируем по времени (ASC)
-            df = pd.DataFrame(rows, columns=['time', 'close', 'volume'])
-            df = df.sort_values('time').reset_index(drop=True)
-            
-            # --- РАСЧЕТ ИНДИКАТОРОВ ---
-            close = df['close']
-            
-            # RSI 14
-            df['rsi'] = calculate_rsi(close, 14)
-            
-            # EMA 50
-            df['ema_50'] = calculate_ema(close, 50)
-            
-            # MACD
-            df['macd'], df['macd_signal'], df['macd_hist'] = calculate_macd(close)
-            
-            # Bollinger Bands
-            df['bb_upper'], df['bb_lower'] = calculate_bollinger(close)
-            
-            # Берем ПОСЛЕДНЕЕ значение (текущее состояние)
-            last = df.iloc[-1]
-            
-            # Спарклайн (последние 24 точки или меньше)
-            sparkline_data = close.tail(24).tolist()
-            # Фронтенд ожидает объект { price: [...] }
-            sparkline_obj = {"price": sparkline_data}
-            sparkline_json = json.dumps(sparkline_obj)
-            
-            # --- СОХРАНЕНИЕ В DB ---
-            # Upsert (Вставить или Обновить)
-            update_query = """
-                INSERT INTO coin_status (
-                    symbol, updated_at, 
-                    current_price, volume_24h, 
-                    rsi_14, macd, macd_signal, macd_hist, ema_50, bb_upper, bb_lower,
-                    sparkline_in_7d
-                ) VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-                ON CONFLICT (symbol) DO UPDATE SET
-                    updated_at = NOW(),
-                    current_price = EXCLUDED.current_price,
-                    volume_24h = EXCLUDED.volume_24h,
-                    rsi_14 = EXCLUDED.rsi_14,
-                    macd = EXCLUDED.macd,
-                    macd_signal = EXCLUDED.macd_signal,
-                    macd_hist = EXCLUDED.macd_hist,
-                    ema_50 = EXCLUDED.ema_50,
-                    bb_upper = EXCLUDED.bb_upper,
-                    bb_lower = EXCLUDED.bb_lower,
-                    sparkline_in_7d = EXCLUDED.sparkline_in_7d;
-            """
-            
-            await db.pool.execute(
-                update_query,
+    # 1. Получаем список активных символов
+    coins = await db.fetch_all("SELECT symbol FROM coins_meta WHERE is_active = TRUE")
+    if not coins:
+        logger.warning("No active coins found in coins_meta. Checking candles...")
+        coins = await db.fetch_all("SELECT DISTINCT symbol FROM candles LIMIT 1000")
+    
+    symbols = [r['symbol'] for r in coins]
+    
+    # 2. Обрабатываем пачками по 50 монет для стабильности
+    batch_size = 50
+    for i in range(0, len(symbols), batch_size):
+        batch = symbols[i:i+batch_size]
+        logger.info(f"Processing batch {i//batch_size + 1} ({len(batch)} symbols)")
+        
+        # Получаем историю свечей для всей пачки разом
+        # Нам нужно ~200 свечей для каждой монеты
+        symbols_placeholder = ", ".join([f"'{s}'" for s in batch])
+        query = f"""
+            SELECT 
                 symbol,
-                float(last['close']),
-                float(last['volume']), 
-                float(last['rsi']) if not pd.isna(last['rsi']) else None,
-                float(last['macd']) if not pd.isna(last['macd']) else None,
-                float(last['macd_signal']) if not pd.isna(last['macd_signal']) else None,
-                float(last['macd_hist']) if not pd.isna(last['macd_hist']) else None,
-                float(last['ema_50']) if not pd.isna(last['ema_50']) else None,
-                float(last['bb_upper']) if not pd.isna(last['bb_upper']) else None,
-                float(last['bb_lower']) if not pd.isna(last['bb_lower']) else None,
-                sparkline_json
-            )
-            # print(f"Updated {symbol}: RSI={last['rsi']:.2f}")
+                time_bucket('1h', time) AS time,
+                LAST(close, time) as close,
+                SUM(volume) as volume
+            FROM candles
+            WHERE symbol IN ({symbols_placeholder})
+              AND time > NOW() - INTERVAL '10 days'
+            GROUP BY symbol, time
+            ORDER BY symbol, time ASC
+        """
+        
+        try:
+            rows = await db.fetch_all(query)
+            if not rows:
+                continue
+                
+            df_all = pd.DataFrame(rows, columns=['symbol', 'time', 'close', 'volume'])
+            
+            updates = []
+            for symbol in batch:
+                df = df_all[df_all['symbol'] == symbol].copy()
+                if len(df) < 10:
+                    continue
+                
+                close = df['close']
+                
+                # Расчет
+                rsi = calculate_rsi(close, 14).iloc[-1]
+                ema50 = calculate_ema(close, 50).iloc[-1]
+                macd, macd_sig, macd_hist = calculate_macd(close)
+                bb_up, bb_low = calculate_bollinger(close)
+                
+                # Спарклайн (24 точки)
+                spark_data = close.tail(24).tolist()
+                spark_json = json.dumps({"price": spark_data})
+                
+                updates.append((
+                    float(close.iloc[-1]), # current_price (snapshot)
+                    float(df['volume'].tail(24).sum()), # approx volume 24h
+                    float(rsi) if not pd.isna(rsi) else None,
+                    float(macd.iloc[-1]) if not pd.isna(macd.iloc[-1]) else None,
+                    float(macd_sig.iloc[-1]) if not pd.isna(macd_sig.iloc[-1]) else None,
+                    float(macd_hist.iloc[-1]) if not pd.isna(macd_hist.iloc[-1]) else None,
+                    float(ema50) if not pd.isna(ema50) else None,
+                    float(bb_up.iloc[-1]) if not pd.isna(bb_up.iloc[-1]) else None,
+                    float(bb_low.iloc[-1]) if not pd.isna(bb_low.iloc[-1]) else None,
+                    spark_json,
+                    symbol
+                ))
 
+            if updates:
+                query_update = """
+                    UPDATE coin_status SET
+                        updated_at = NOW(),
+                        current_price = $1,
+                        volume_24h = $2,
+                        rsi_14 = $3,
+                        macd = $4,
+                        macd_signal = $5,
+                        macd_hist = $6,
+                        ema_50 = $7,
+                        bb_upper = $8,
+                        bb_lower = $9,
+                        sparkline_in_7d = $10
+                    WHERE symbol = $11
+                """
+                async with db.pool.acquire() as conn:
+                    await conn.executemany(query_update, updates)
+                    
         except Exception as e:
-            print(f"Error processing {symbol}: {e}")
+            logger.error(f"Error in batch: {e}")
+
+    logger.info("✅ TA Cycle Finished.")
 
 async def worker_loop():
-    print("🚀 TA Worker started", flush=True)
-    try:
-        await db.connect()
-        print("✅ DB Connected", flush=True)
-    except Exception as e:
-        print(f"❌ DB Connection failed: {e}", flush=True)
-        return
+    logger.info("🚀 TA Worker started")
+    await db.connect()
     
-    # Сначала создаем таблицу если нет
+    # Убедимся, что мета-данные есть
     from init_status_db import init_db
     await init_db()
     
     while True:
-        start_time = time.time()
-        print("🔍 Fetching symbols...", flush=True)
+        try:
+            await update_all_indicators()
+        except Exception as e:
+            logger.error(f"Worker Loop Error: {e}")
         
-        # 1. Получаем список всех монет из мета-таблицы (Мгновенно)
-        coins = await db.fetch_all("SELECT symbol FROM coins_meta WHERE is_active = TRUE")
-        
-        if not coins:
-             print("⚠️ No coins in coins_meta. Filling from candles...", flush=True)
-             # Fallback если база "старая"
-             coins = await db.fetch_all("SELECT DISTINCT symbol FROM candles WHERE time > NOW() - INTERVAL '24 hours'")
-             if not coins:
-                 coins = await db.fetch_all("SELECT DISTINCT symbol FROM candles LIMIT 1000")
-             
-        symbols = list(set([r['symbol'] for r in coins])) # Убираем дубли на всякий случай
-        
-        print(f"📊 Analyzing {len(symbols)} coins...", flush=True)
-        
-        await process_batch(symbols)
-        
-        elapsed = time.time() - start_time
-        print(f"✅ Cycle finished in {elapsed:.2f}s. Sleeping...", flush=True)
-        
-        # Спим 1 минуту перед следующим обновлением
-        await asyncio.sleep(60)
+        # Раз в 5 минут достаточно для часовых индикаторов
+        await asyncio.sleep(300)
 
 if __name__ == "__main__":
     asyncio.run(worker_loop())
