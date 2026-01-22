@@ -105,7 +105,8 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       // but 'update' method handles timestamp matching automatically.
       // If timestamp exists, it updates. If it's new, it adds.
       
-      const lastK = historyData[historyData.length - 1];
+      if (!klines || klines.length === 0) return;
+      const lastK = klines[klines.length - 1];
       const candleTime = Math.floor(Date.now() / 60000) * 60; // Current minute bucket
 
       if (lastK && candleTime === lastK.time) {
