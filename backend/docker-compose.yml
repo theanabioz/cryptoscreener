@@ -30,6 +30,20 @@ services:
         condition: service_healthy
     restart: always
 
+  # Streamer (Realtime WebSocket данные)
+  streamer:
+    build: ./app
+    container_name: crypto_streamer
+    command: python3 streamer.py
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: timescaledb
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: always
+
   # Сервис загрузки данных
   collector:
     build: ./collector
