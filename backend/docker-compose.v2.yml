@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # 1. API Server
+  api-v2:
+    build: 
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile # Используем общий питон-образ
+    container_name: crypto_api_v2
+    command: uvicorn api_v2.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
+    depends_on:
+      timescaledb: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: always
+
+  # 2. Data Engine (Streamer)
+  data-engine:
+    build:
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile
+    container_name: crypto_data_engine
+    command: python3 engines/data-engine/main.py
+    env_file: .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: always
+
+  # 3. Indicator Engine: Scheduler
+  ie-scheduler:
+    build:
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile
+    container_name: crypto_ie_scheduler
+    command: python3 engines/indicator-engine/scheduler.py
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: always
+
+  # 4. Indicator Engine: Worker (Масштабируемый)
+  ie-worker:
+    build:
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile
+    command: python3 engines/indicator-engine/worker.py
+    env_file: .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: always
+
+  # Базовая инфраструктура (оставляем старую)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: crypto_db
+    env_file: .env
+    volumes:
+      - ts_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: crypto_redis
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
+volumes:
+  ts_data:
+    external: true # Используем уже существующий объем с данными
