@@ -12,7 +12,7 @@ interface DetailChartProps {
   isPositive: boolean;
 }
 
-const TIMEFRAMES = ['1H', '4H', '1D', '1W'];
+const TIMEFRAMES = ['1M', '3M', '5M', '15M', '30M', '1H', '4H', '1D', '1W'];
 
 export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -91,21 +91,28 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailCha
 
   return (
     <Box w="full">
-      <HStack spacing={2} mb={4} px={4} justify="center">
-        {TIMEFRAMES.map((tf) => (
-          <Button
-            key={tf}
-            size="xs"
-            variant={activeTf === tf ? 'solid' : 'outline'}
-            colorScheme={activeTf === tf ? 'teal' : 'gray'}
-            onClick={() => setActiveTf(tf)}
-            borderRadius="full"
-            px={4}
-          >
-            {tf}
-          </Button>
-        ))}
-      </HStack>
+      <Box overflowX="auto" pb={2} px={4} sx={{
+          '&::-webkit-scrollbar': { display: 'none' },
+          'scrollbarWidth': 'none',
+          '-ms-overflow-style': 'none'
+      }}>
+        <HStack spacing={2} minW="max-content">
+            {TIMEFRAMES.map((tf) => (
+            <Button
+                key={tf}
+                size="xs"
+                variant={activeTf === tf ? 'solid' : 'outline'}
+                colorScheme={activeTf === tf ? 'teal' : 'gray'}
+                onClick={() => setActiveTf(tf)}
+                borderRadius="full"
+                px={4}
+                minW="45px"
+            >
+                {tf}
+            </Button>
+            ))}
+        </HStack>
+      </Box>
       
       <Box position="relative" w="full" h="300px">
         {isLoading && (
