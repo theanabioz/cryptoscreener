@@ -26,14 +26,13 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   const { toggleCoin, favorites } = useWatchlistStore();
   const { data: coins } = useCoins();
   
-  // State for Timeframe and History Limit
+  // State for Timeframe
   const [activeTf, setActiveTf] = useState('1H');
-  const [historyLimit, setHistoryLimit] = useState(200); // Start with small payload
+  // const [historyLimit, setHistoryLimit] = useState(200); // Temporary disabled for perf check
   
-  // Reset limit when timeframe changes to ensure fast load
   const handleTfChange = (newTf: string) => {
       setActiveTf(newTf);
-      setHistoryLimit(200);
+      // setHistoryLimit(200);
   };
   
   // Find coin in loaded data
@@ -42,20 +41,21 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
 
   // Load Klines for Chart and Indicators
   const apiInterval = activeTf.toLowerCase();
-  // Enable placeholder only when fetching heavy history (limit > 200), 
-  // so switching timeframes (limit=200) shows a loading state immediately.
-  const { data: klines, isLoading: isChartLoading, isError: isChartError, isPlaceholderData } = useKlines(symbol, apiInterval, historyLimit, historyLimit > 200);
+  
+  // Direct load 3000 candles without progressive steps to test speed
+  const { data: klines, isLoading: isChartLoading, isError: isChartError, isPlaceholderData } = useKlines(symbol, apiInterval, 3000, false);
 
+  /*
   // Progressive Loading Effect
-  // Once initial data (200) is loaded, fetch full history (3000) in background
   useEffect(() => {
       if (klines && klines.length >= 100 && historyLimit === 200 && !isChartLoading) {
           const timer = setTimeout(() => {
               setHistoryLimit(3000);
-          }, 1000); // Wait 1s after render before fetching heavy history
+          }, 1000); 
           return () => clearTimeout(timer);
       }
   }, [klines, historyLimit, isChartLoading]);
+  */
 
   // Calculate Indicators dynamically based on Klines
   const dynamicIndicators = useMemo(() => {
