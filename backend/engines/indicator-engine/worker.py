@@ -64,6 +64,7 @@ async def process_task(symbol):
             spark_json,
             symbol
         )
+        print(f"  [v] Processed {symbol}", flush=True)
     except Exception as e:
         print(f"  [!] Error processing {symbol}: {e}", flush=True)
 
