@@ -178,7 +178,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
       </SimpleGrid>
 
       {/* Technical Indicators Section */}
-      <TechnicalIndicators coinData={dynamicIndicators} timeframe={activeTf} />
+      <TechnicalIndicators coinData={dynamicIndicators} timeframe={activeTf} isLoading={isChartLoading} />
       
       {/* Description / About */}
       <Box p={4} mt={4}>

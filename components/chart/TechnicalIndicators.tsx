@@ -6,10 +6,11 @@ import { Coin } from '@/lib/types';
 interface TechnicalIndicatorsProps {
   coinData: Partial<Coin>;
   timeframe?: string;
+  isLoading?: boolean;
 }
 
-const IndicatorItem = ({ label, value, status, statusColor }: { label: string, value: string | number, status?: string, statusColor?: string }) => (
-  <Box bg="gray.800" p={3} borderRadius="lg">
+const IndicatorItem = ({ label, value, status, statusColor, isLoading }: { label: string, value: string | number, status?: string, statusColor?: string, isLoading?: boolean }) => (
+  <Box bg="gray.800" p={3} borderRadius="lg" opacity={isLoading ? 0.6 : 1} transition="opacity 0.2s">
     <VStack align="start" spacing={1}>
       <Text fontSize="xs" color="gray.400" fontWeight="bold" textTransform="uppercase">{label}</Text>
       <HStack justify="space-between" w="full">
@@ -24,8 +25,8 @@ const IndicatorItem = ({ label, value, status, statusColor }: { label: string, v
   </Box>
 );
 
-export const TechnicalIndicators = ({ coinData, timeframe = '1H' }: TechnicalIndicatorsProps) => {
-  if (!coinData.rsi) return null; // Don't render if no data
+export const TechnicalIndicators = ({ coinData, timeframe = '1H', isLoading = false }: TechnicalIndicatorsProps) => {
+  if (!coinData.rsi && !isLoading) return null; // Don't render if no data AND not loading
 
   const currentPrice = coinData.current_price ?? 0;
   const ema50 = coinData.ema50 ?? 0;
@@ -120,7 +121,7 @@ export const TechnicalIndicators = ({ coinData, timeframe = '1H' }: TechnicalInd
   else if (finalScore <= 40) { ratingLabel = 'SELL'; ratingColor = 'red'; }
 
   return (
-    <Box mt={6}>
+    <Box mt={6} opacity={isLoading ? 0.6 : 1} transition="opacity 0.2s" pointerEvents={isLoading ? 'none' : 'auto'}>
       <Text fontSize="sm" fontWeight="bold" mb={3} px={4} color="gray.300">
         TECHNICAL ANALYSIS ({timeframe})
       </Text>
@@ -133,6 +134,7 @@ export const TechnicalIndicators = ({ coinData, timeframe = '1H' }: TechnicalInd
             value={ind.value} 
             status={ind.status} 
             statusColor={ind.color}
+            isLoading={isLoading}
           />
         ))}
       </SimpleGrid>
