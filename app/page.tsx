@@ -136,8 +136,8 @@ export default function ScreenerPage() {
           ))
         ) : (
           filteredCoins.length > 0 ? (
-            filteredCoins.map(coin => (
-              <CoinItem key={coin.id} coin={coin} />
+            filteredCoins.map((coin, index) => (
+              <CoinItem key={coin.id} coin={coin} index={index} />
             ))
           ) : (
             <Box p={8} textAlign="center">

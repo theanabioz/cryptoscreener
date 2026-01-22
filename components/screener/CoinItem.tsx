@@ -6,18 +6,34 @@ import { TrendingUp, TrendingDown } from 'lucide-react'
 import { Sparkline } from '../ui/Sparkline'
 import Link from 'next/link'
 import { useHaptic } from '@/hooks/useHaptic'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { fetchKlines } from '@/hooks/useKlines'
 
 import { PriceFlash } from '../ui/PriceFlash'
 
 interface CoinItemProps {
   coin: Coin;
+  index?: number;
 }
 
-export const CoinItem = ({ coin }: CoinItemProps) => {
+export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
   const isPositive = (coin.price_change_percentage_24h || 0) >= 0;
   const badgeColor = isPositive ? 'green' : 'red';
   
   const { impact } = useHaptic();
+  const queryClient = useQueryClient();
+
+  // Prefetch klines for the first 15 visible coins to make navigation instant
+  useEffect(() => {
+      if (index < 15 && coin.symbol) {
+          queryClient.prefetchQuery({
+              queryKey: ['klines', coin.symbol, '1h', 200], // Default timeframe/limit on Detail Page
+              queryFn: () => fetchKlines(coin.symbol, '1h', 200),
+              staleTime: 1000 * 60 * 5, // 5 minutes cache
+          });
+      }
+  }, [coin.symbol, index, queryClient]);
 
   // Safe access to properties
   const price = coin.current_price || 0;
