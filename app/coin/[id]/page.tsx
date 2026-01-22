@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { MOCK_COINS } from '@/lib/mockData';
 import { DetailChart } from '@/components/chart/DetailChart';
 import { TechnicalIndicators } from '@/components/chart/TechnicalIndicators';
-import { use } from 'react';
+import { use, useState, useMemo } from 'react';
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 import { useWatchlistStore } from '@/store/useWatchlistStore';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useCoins } from '@/hooks/useCoins';
+import { useKlines } from '@/hooks/useKlines';
 import { PriceFlash } from '@/components/ui/PriceFlash';
+import { calculateRSI, calculateMACD, calculateEMA, calculateBollinger } from '@/lib/indicators';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -24,7 +26,60 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   const { toggleCoin, favorites } = useWatchlistStore();
   const { data: coins } = useCoins();
   
-  // Check if favorite (simple check, for strict hydration safety we might use a useEffect wrapper, but this is fine for MVP)
+  // State for Timeframe
+  const [activeTf, setActiveTf] = useState('1H');
+  
+  // Find coin in loaded data
+  const coin = coins?.find(c => c.id === id);
+  const symbol = coin?.symbol || '';
+
+  // Load Klines for Chart and Indicators
+  const apiInterval = activeTf.toLowerCase();
+  const { data: klines, isLoading: isChartLoading, isError: isChartError } = useKlines(symbol, apiInterval);
+
+  // Calculate Indicators dynamically based on Klines
+  const dynamicIndicators = useMemo(() => {
+      if (!klines || klines.length < 50) return coin || {}; // Fallback to static data if not enough klines
+
+      const closePrices = klines.map(k => k.close);
+      
+      const rsiSeries = calculateRSI(closePrices, 14);
+      const emaSeries = calculateEMA(closePrices, 50);
+      const macdData = calculateMACD(closePrices, 12, 26, 9);
+      const bbData = calculateBollinger(closePrices, 20, 2);
+
+      const lastIndex = closePrices.length - 1;
+
+      return {
+          ...coin,
+          rsi: rsiSeries[lastIndex],
+          ema50: emaSeries[lastIndex],
+          macd: macdData.histogram[lastIndex], // Histogram is usually what we display as value
+          macd_signal: 0, // We compare Histogram > 0? No, standard logic: MACD Line > Signal Line.
+          // Wait, TechnicalIndicators uses: macd (value) and macd_signal (signal). 
+          // Actually, our previous logic was: macd > macd_signal.
+          // In `ta_lib` (backend): returns macd, signal, hist.
+          // In `indicators.ts` (frontend): returns { macdLine, signalLine, histogram }.
+          // Let's align:
+          // The component expects `macd` to be the MAIN line or HISTOGRAM? 
+          // Usually 'MACD Value' is the Histogram height. 
+          // But for "Bullish/Bearish" status we compare MACD Line vs Signal Line.
+          // Let's pass MACD Line as 'macd' and Signal Line as 'macd_signal' to keep logic valid.
+          // OR pass Histogram as 'macd' (value) and check if Histogram > 0.
+          // Looking at TechnicalIndicators: const macdStatus = macdVal > macdSig ? 'Bullish' : 'Bearish';
+          // This implies macdVal is MACD Line and macdSig is Signal Line.
+          
+          macd: macdData.macdLine[lastIndex],
+          macd_signal: macdData.signalLine[lastIndex],
+          
+          bb_upper: bbData.upper[lastIndex],
+          bb_lower: bbData.lower[lastIndex],
+          // Current price from klines to match indicators
+          current_price: closePrices[lastIndex] 
+      };
+  }, [klines, coin]);
+
+  // Check if favorite
   const isFav = favorites.includes(id);
 
   const handleToggleFavorite = () => {
@@ -36,9 +91,6 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
   
-  // Find coin in loaded data (or mock data provided by hook)
-  const coin = coins?.find(c => c.id === id);
-
   const isPositive = (coin?.price_change_percentage_24h || 0) >= 0;
 
   if (!coin) {
@@ -64,8 +116,6 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
         px={4}
       >
         <Flex justify="center" align="center" position="relative" h="40px" mb={2}>
-          {/* Back button space placeholder if needed, but native button handles navigation. 
-              We just center the title. */}
           <Heading size="md">{coin.name}</Heading>
         </Flex>
       </Box>
@@ -111,7 +161,12 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
           coinId={coin.id} 
           symbol={coin.symbol} 
           basePrice={coin.current_price} 
-          isPositive={isPositive} 
+          isPositive={isPositive}
+          klines={klines}
+          isLoading={isChartLoading}
+          isError={isChartError}
+          activeTf={activeTf}
+          onTfChange={setActiveTf}
         />
       </Box>
 
@@ -136,7 +191,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
       </SimpleGrid>
 
       {/* Technical Indicators Section */}
-      <TechnicalIndicators coinData={coin} />
+      <TechnicalIndicators coinData={dynamicIndicators} timeframe={activeTf} />
       
       {/* Description / About */}
       <Box p={4} mt={4}>

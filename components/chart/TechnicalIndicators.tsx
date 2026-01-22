@@ -5,6 +5,7 @@ import { Coin } from '@/lib/types';
 
 interface TechnicalIndicatorsProps {
   coinData: Partial<Coin>;
+  timeframe?: string;
 }
 
 const IndicatorItem = ({ label, value, status, statusColor }: { label: string, value: string | number, status?: string, statusColor?: string }) => (
@@ -23,19 +24,13 @@ const IndicatorItem = ({ label, value, status, statusColor }: { label: string, v
   </Box>
 );
 
-export const TechnicalIndicators = ({ coinData }: TechnicalIndicatorsProps) => {
+export const TechnicalIndicators = ({ coinData, timeframe = '1H' }: TechnicalIndicatorsProps) => {
   if (!coinData.rsi) return null; // Don't render if no data
 
   const currentPrice = coinData.current_price ?? 0;
   const ema50 = coinData.ema50 ?? 0;
   const macd = coinData.macd ?? 0;
   const rsi = coinData.rsi ?? 0;
-
-  // RSI Logic
-  let rsiStatus = 'Neutral';
-  let rsiColor = 'gray';
-  if (rsi > 70) { rsiStatus = 'Overbought'; rsiColor = 'red'; }
-  else if (rsi < 30) { rsiStatus = 'Oversold'; rsiColor = 'green'; }
 
   // MACD Logic (Compare MACD line vs Signal line)
   // If macd > signal -> Bullish momentum
@@ -49,7 +44,7 @@ export const TechnicalIndicators = ({ coinData }: TechnicalIndicatorsProps) => {
   const emaColor = currentPrice > ema50 ? 'green' : 'red';
 
   const indicators = [
-    { label: 'RSI (14)', value: typeof rsi === 'number' ? rsi.toFixed(2) : rsi, status: rsiStatus, color: rsiColor },
+    { label: `RSI (14)`, value: typeof rsi === 'number' ? rsi.toFixed(2) : rsi, status: rsiStatus, color: rsiColor },
     { label: 'MACD', value: typeof macd === 'number' ? macd.toFixed(2) : (macd || '-'), status: macdStatus, color: macdColor },
     { label: 'EMA (50)', value: typeof ema50 === 'number' ? ema50.toFixed(2) : (ema50 || '-'), status: emaStatus, color: emaColor },
     { label: 'Bollinger', value: coinData.bb_pos || 'Mid', status: 'Range', color: 'gray' },
@@ -121,7 +116,7 @@ export const TechnicalIndicators = ({ coinData }: TechnicalIndicatorsProps) => {
   return (
     <Box mt={6}>
       <Text fontSize="sm" fontWeight="bold" mb={3} px={4} color="gray.300">
-        TECHNICAL ANALYSIS (1H)
+        TECHNICAL ANALYSIS ({timeframe})
       </Text>
       
       <SimpleGrid columns={2} spacing={3} px={4}>

@@ -3,27 +3,33 @@
 import { createChart, ColorType, IChartApi, CandlestickSeries, ISeriesApi } from 'lightweight-charts';
 import { useEffect, useRef, useState } from 'react';
 import { Box, HStack, Button, Spinner, Center, Text } from '@chakra-ui/react';
-import { useKlines } from '@/hooks/useKlines';
+// useKlines removed
+
+export const TIMEFRAMES = ['1M', '3M', '5M', '15M', '30M', '1H', '4H', '1D', '1W'];
+
+interface Kline {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
 
 interface DetailChartProps {
   coinId: string; // This is actually 'btc', 'eth'
   symbol: string; // This should be 'BTC', 'ETH' for API
   basePrice: number;
   isPositive: boolean;
+  klines: Kline[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  activeTf: string;
+  onTfChange: (tf: string) => void;
 }
 
-const TIMEFRAMES = ['1M', '3M', '5M', '15M', '30M', '1H', '4H', '1D', '1W'];
-
-export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailChartProps) => {
+export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isLoading, isError, activeTf, onTfChange }: DetailChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const [activeTf, setActiveTf] = useState('1H');
-
-  // Convert UI timeframe to Binance format
-  const apiInterval = activeTf.toLowerCase();
-  
-  // Fetch real data
-  const { data: klines, isLoading, isError } = useKlines(symbol, apiInterval);
 
   useEffect(() => {
     if (!chartContainerRef.current || !klines || klines.length === 0) return;
@@ -73,7 +79,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailCha
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [klines, activeTf]); // Re-run when data or timeframe changes
+  }, [klines]); // Re-run when data changes (tf change triggers klines change)
 
   // Real-time chart update
   useEffect(() => {
@@ -103,7 +109,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive }: DetailCha
                 size="xs"
                 variant={activeTf === tf ? 'solid' : 'outline'}
                 colorScheme={activeTf === tf ? 'teal' : 'gray'}
-                onClick={() => setActiveTf(tf)}
+                onClick={() => onTfChange(tf)}
                 borderRadius="full"
                 px={4}
                 minW="45px"
