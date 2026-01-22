@@ -93,8 +93,8 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "price_change_percentage_24h": round(change_pct, 2),
                 "market_cap": 0,
                 "total_volume": row['volume_24h'] or 0,
-                "rsi": row['rsi_14'] or 50.0, 
-                "macd": row['macd'] or 0,
+                "rsi": round(row['rsi_14'], 2) if row['rsi_14'] is not None else 50.0, 
+                "macd": round(row['macd'], 2) if row['macd'] is not None else 0,
                 "sparkline_in_7d": {
                     "price": row['sparkline'] or []
                 }

@@ -46,9 +46,9 @@ export const TechnicalIndicators = ({ coinData }: TechnicalIndicatorsProps) => {
   const emaColor = currentPrice > ema50 ? 'green' : 'red';
 
   const indicators = [
-    { label: 'RSI (14)', value: rsi, status: rsiStatus, color: rsiColor },
-    { label: 'MACD', value: macd || '-', status: macdStatus, color: macdColor },
-    { label: 'EMA (50)', value: ema50 || '-', status: emaStatus, color: emaColor },
+    { label: 'RSI (14)', value: typeof rsi === 'number' ? rsi.toFixed(2) : rsi, status: rsiStatus, color: rsiColor },
+    { label: 'MACD', value: typeof macd === 'number' ? macd.toFixed(2) : (macd || '-'), status: macdStatus, color: macdColor },
+    { label: 'EMA (50)', value: typeof ema50 === 'number' ? ema50.toFixed(2) : (ema50 || '-'), status: emaStatus, color: emaColor },
     { label: 'Bollinger', value: coinData.bb_pos || 'Mid', status: 'Range', color: 'gray' },
   ];
 
