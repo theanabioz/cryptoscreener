@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Query
-from database import db
+from fastapi import APIRouter, HTTPException
+from common.database import db
 from datetime import datetime, timedelta
 
 router = APIRouter()
