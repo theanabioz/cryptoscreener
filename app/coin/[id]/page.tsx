@@ -45,7 +45,10 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   // Prefetch neighboring timeframes for instant switching UX
   useEffect(() => {
       if (!symbol) return;
-      const tfs = ['15m', '4h', '1d']; // Most common alternatives
+      // Prefetch ALL timeframes because 200 candles are lightweight
+      const tfs = ['1m', '3m', '5m', '15m', '30m', '4h', '1d', '1w']; 
+      // Note: '1h' is loaded by default, so skip it to save one request
+      
       tfs.forEach(tf => {
           queryClient.prefetchQuery({
               queryKey: ['klines', symbol, tf, 200],
