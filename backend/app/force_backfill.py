@@ -7,45 +7,33 @@ from database import db
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-async def backfill(symbol, days=7):
-    logger.info(f"🚀 Starting FORCE backfill for {symbol} ({days} days)...")
-    
-    exchange = ccxt.binance({
-        'enableRateLimit': True,
-        'options': {'defaultType': 'spot'}
-    })
-    
+async def backfill_symbol(exchange, symbol, days=7):
+    """Докачивает историю для конкретной монеты за указанный период."""
     try:
-        # Binance отдает макс 1000 свечей за раз. 
-        # В 7 днях = 7 * 24 * 60 = 10080 минут.
-        # Нам нужно сделать ~11 запросов.
-        
         since = int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp() * 1000)
-        all_candles = []
+        end_ts = int(datetime.now(timezone.utc).timestamp() * 1000)
         
-        while since < int(datetime.now(timezone.utc).timestamp() * 1000):
-            logger.info(f"Fetching {symbol} starting from {datetime.fromtimestamp(since/1000, tz=timezone.utc)}")
+        total_injected = 0
+        while since < end_ts:
             candles = await exchange.fetch_ohlcv(symbol, '1m', since=since, limit=1000)
             if not candles:
                 break
             
-            all_candles.extend(candles)
-            since = candles[-1][0] + 60000 # Следующая минута
-            
-            # Сохраняем пачкой
             await save_to_db(symbol, candles)
+            total_injected += len(candles)
+            since = candles[-1][0] + 60000 
             
-            if len(candles) < 1000: # Дошли до текущего момента
+            if len(candles) < 1000:
                 break
                 
-            await asyncio.sleep(0.5) # Rate limit protection
+            await asyncio.sleep(0.1) # Минимальная пауза между чанками одного символа
 
-        logger.info(f"✅ Finished {symbol}. Total candles injected: {len(all_candles)}")
+        logger.info(f"  [+] {symbol}: {total_injected} candles")
+        return total_injected
 
     except Exception as e:
-        logger.error(f"Error backfilling {symbol}: {e}")
-    finally:
-        await exchange.close()
+        logger.error(f"  [!] Error {symbol}: {e}")
+        return 0
 
 async def save_to_db(symbol, candles):
     records = []
@@ -66,12 +54,36 @@ async def save_to_db(symbol, candles):
         await conn.executemany(query, records)
 
 async def main():
+    logger.info("🚀 Starting MASSIVE Force Backfill (7 days for ALL symbols)...")
     await db.connect()
-    # Фокусируемся на главных монетах, где дыры
-    await backfill('BTC/USDT', days=7)
-    await backfill('ETH/USDT', days=7)
-    await backfill('SOL/USDT', days=7)
-    await db.close()
+    
+    exchange = ccxt.binance({
+        'enableRateLimit': True,
+        'options': {'defaultType': 'spot'}
+    })
+    
+    try:
+        # Берем список активных монет
+        rows = await db.fetch_all("SELECT symbol FROM coins_meta WHERE is_active = TRUE")
+        symbols = [r['symbol'] for r in rows]
+        
+        if not symbols:
+            logger.warning("No active symbols in coins_meta. Fetching from candles...")
+            rows = await db.fetch_all("SELECT DISTINCT symbol FROM candles")
+            symbols = [r['symbol'] for r in rows]
+
+        logger.info(f"Targeting {len(symbols)} symbols. This will take some time...")
+        
+        for i, symbol in enumerate(symbols):
+            logger.info(f"({i+1}/{len(symbols)}) Processing {symbol}...")
+            await backfill_symbol(exchange, symbol, days=7)
+            # Пауза между монетами для соблюдения лимитов API
+            await asyncio.sleep(0.2)
+            
+    finally:
+        await exchange.close()
+        await db.close()
+        logger.info("✅ MASSIVE Backfill finished.")
 
 if __name__ == "__main__":
     asyncio.run(main())
