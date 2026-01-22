@@ -56,7 +56,7 @@ export default function ScreenerPage() {
       if (filters.priceChange === 'losers' && coin.price_change_percentage_24h >= 0) return false;
 
       return true;
-    });
+    }).sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
   }, [filters, coins]);
 
   const activeCount = activeFilterCount();

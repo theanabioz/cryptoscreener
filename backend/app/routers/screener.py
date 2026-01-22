@@ -50,6 +50,7 @@ async def get_coins(ids: str = None, strategy: str = None):
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
         LEFT JOIN sparklines sp ON ld.symbol = sp.symbol
         WHERE 1=1
+        ORDER BY cs.market_cap DESC NULLS LAST
     """
     
     params = []

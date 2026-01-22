@@ -42,16 +42,35 @@ async def sync_cmc_data():
         all_bases = list(base_map.keys())
         logger.info(f"Loaded {len(all_bases)} unique base assets from DB")
 
-        # Добавим обработку "1000" префиксов: если есть 1000SATS, добавим SATS в запрос
-        # Но мапить будем обратно на 1000SATS
+        # Ручной маппинг (Binance -> CMC)
+        MANUAL_MAPPING = {
+            '1MBABYDOGE': 'BABYDOGE',
+            'BTTC': 'BTT',
+            'RONIN': 'RON',
+            'VELODROME': 'VELO',
+            'G': 'GRT', # Часто путают The Graph
+            # Автоматическая обработка 1000... будет ниже, но можно и явно
+        }
+
+        # Добавим обработку алиасов и "1000" префиксов
         aliases = {}
         for base in all_bases:
-            if base.startswith("1000"):
-                clean = base[4:]
-                if clean not in base_map: # Если чистого SATS у нас нет, но есть 1000SATS
-                    aliases[clean] = base # SATS -> 1000SATS
-                    if clean not in all_bases:
-                        all_bases.append(clean)
+            target = None
+            
+            # 1. Ручной маппинг
+            if base in MANUAL_MAPPING:
+                target = MANUAL_MAPPING[base]
+            
+            # 2. Префикс 1000 (если нет ручного)
+            elif base.startswith("1000"):
+                target = base[4:]
+            
+            # Если нашли алиас
+            if target:
+                if target not in base_map: # Если "чистого" тикера у нас нет
+                    aliases[target] = base # Запоминаем: CMC(target) -> DB(base)
+                    if target not in all_bases:
+                        all_bases.append(target) # Добавляем в список для запроса
 
         # 2. Запрашиваем CMC пачками по 100 символов
         # CMC рекомендует не более 100 символов за раз
