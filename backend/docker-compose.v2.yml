@@ -88,4 +88,5 @@ services:
 
 volumes:
   ts_data:
-    external: true # Используем уже существующий объем с данными
+    external: true
+    name: backend_ts_data # Явно указываем имя существующего тома
