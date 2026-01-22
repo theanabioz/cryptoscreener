@@ -23,6 +23,8 @@ export const useCoins = (ids?: string, strategy?: string) => {
     // Increase staleTime so that data is considered fresh during navigation.
     // This makes "back" navigation instant. refetchInterval will still keep prices live.
     staleTime: 1000 * 30, 
+    // Keep data in memory for 1 hour even if unused (prevents skeletons on back nav after long time)
+    gcTime: 1000 * 60 * 60,
     refetchInterval: 1000, 
     retry: 2,
   });
