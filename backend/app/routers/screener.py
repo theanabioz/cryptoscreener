@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 
 router = APIRouter()
 
+import json
+
 @router.get("/coins")
 async def get_coins(ids: str = None, strategy: str = None):
     """
@@ -12,6 +14,7 @@ async def get_coins(ids: str = None, strategy: str = None):
     """
     
     # Базовый запрос
+    # Sparkline теперь берем из coin_status (предрассчитанный worker-ом)
     query_base = """
         WITH latest_data AS (
             SELECT 
@@ -22,21 +25,6 @@ async def get_coins(ids: str = None, strategy: str = None):
             FROM candles
             WHERE time > NOW() - INTERVAL '24 hours'
             GROUP BY symbol
-        ),
-        sparklines AS (
-             SELECT 
-                symbol,
-                array_agg(close ORDER BY bucket) as sparkline
-             FROM (
-                SELECT 
-                    symbol,
-                    time_bucket('1 hour', time) as bucket,
-                    LAST(close, time) as close
-                FROM candles
-                WHERE time > NOW() - INTERVAL '24 hours'
-                GROUP BY symbol, bucket
-             ) sub
-             GROUP BY symbol
         )
         SELECT 
             ld.*,
@@ -48,10 +36,9 @@ async def get_coins(ids: str = None, strategy: str = None):
             cs.bb_lower,
             cs.market_cap,
             cs.cmc_id,
-            sp.sparkline
+            cs.sparkline
         FROM latest_data ld
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
-        LEFT JOIN sparklines sp ON ld.symbol = sp.symbol
         WHERE 1=1
         ORDER BY cs.market_cap DESC NULLS LAST
     """
@@ -96,6 +83,18 @@ async def get_coins(ids: str = None, strategy: str = None):
             else:
                 image_url = f"https://assets.coincap.io/assets/icons/{row['symbol'].split('/')[0].lower()}@2x.png"
 
+            # Спарклайн из JSON строки
+            sparkline_data = []
+            if row['sparkline']:
+                try:
+                    # asyncpg может возвращать уже декодированный json или строку
+                    if isinstance(row['sparkline'], str):
+                        sparkline_data = json.loads(row['sparkline'])
+                    else:
+                        sparkline_data = row['sparkline'] # Если это уже list
+                except:
+                    pass
+
             result.append({
                 "id": row['symbol'].replace('/', '').lower(),
                 "symbol": row['symbol'].split('/')[0],
@@ -112,7 +111,7 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "bb_upper": row['bb_upper'],
                 "bb_lower": row['bb_lower'],
                 "sparkline_in_7d": {
-                    "price": row['sparkline'] or []
+                    "price": sparkline_data
                 }
             })
             

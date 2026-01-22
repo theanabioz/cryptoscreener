@@ -1,5 +1,6 @@
 import asyncio
 import pandas as pd
+import json
 from database import db
 from ta_lib import calculate_rsi, calculate_ema, calculate_macd, calculate_bollinger
 import time
@@ -36,7 +37,7 @@ async def process_batch(symbols):
             """
             rows = await db.fetch_all(query, symbol)
             
-            if not rows or len(rows) < 50:
+            if not rows or len(rows) < 24: # Минимум 24 для спарклайна
                 continue
 
             # Превращаем в DataFrame и сортируем по времени (ASC)
@@ -61,14 +62,19 @@ async def process_batch(symbols):
             # Берем ПОСЛЕДНЕЕ значение (текущее состояние)
             last = df.iloc[-1]
             
+            # Спарклайн (последние 24 точки или меньше)
+            sparkline_data = close.tail(24).tolist()
+            sparkline_json = json.dumps(sparkline_data)
+            
             # --- СОХРАНЕНИЕ В DB ---
             # Upsert (Вставить или Обновить)
             update_query = """
                 INSERT INTO coin_status (
                     symbol, updated_at, 
                     current_price, volume_24h, 
-                    rsi_14, macd, macd_signal, macd_hist, ema_50, bb_upper, bb_lower
-                ) VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    rsi_14, macd, macd_signal, macd_hist, ema_50, bb_upper, bb_lower,
+                    sparkline
+                ) VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 ON CONFLICT (symbol) DO UPDATE SET
                     updated_at = NOW(),
                     current_price = EXCLUDED.current_price,
@@ -79,14 +85,15 @@ async def process_batch(symbols):
                     macd_hist = EXCLUDED.macd_hist,
                     ema_50 = EXCLUDED.ema_50,
                     bb_upper = EXCLUDED.bb_upper,
-                    bb_lower = EXCLUDED.bb_lower;
+                    bb_lower = EXCLUDED.bb_lower,
+                    sparkline = EXCLUDED.sparkline;
             """
             
             await db.pool.execute(
                 update_query,
                 symbol,
                 float(last['close']),
-                float(last['volume']), # Это volume за последний час, надо бы 24h, но пока так
+                float(last['volume']), 
                 float(last['rsi']) if not pd.isna(last['rsi']) else None,
                 float(last['macd']) if not pd.isna(last['macd']) else None,
                 float(last['macd_signal']) if not pd.isna(last['macd_signal']) else None,
@@ -94,6 +101,7 @@ async def process_batch(symbols):
                 float(last['ema_50']) if not pd.isna(last['ema_50']) else None,
                 float(last['bb_upper']) if not pd.isna(last['bb_upper']) else None,
                 float(last['bb_lower']) if not pd.isna(last['bb_lower']) else None,
+                sparkline_json
             )
             # print(f"Updated {symbol}: RSI={last['rsi']:.2f}")
 
