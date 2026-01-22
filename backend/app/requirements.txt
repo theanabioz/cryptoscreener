@@ -5,4 +5,5 @@ pydantic==2.6.0
 python-dotenv==1.0.0
 pandas==2.2.0
 numpy==1.26.3
-ccxt==4.2.19
+ccxt>=4.4.0
+aiohttp<3.10.0
