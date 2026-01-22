@@ -5,15 +5,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'assets.coingecko.com',
-      },
-      {
-        protocol: 'https',
         hostname: 's2.coinmarketcap.com',
       },
       {
         protocol: 'https',
-        hostname: 'assets.coincap.io',
+        hostname: 'assets.coingecko.com',
       },
     ],
   },
