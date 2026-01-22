@@ -1,7 +1,7 @@
 import asyncio
 import ccxt.async_support as ccxt
 from datetime import datetime, timedelta, timezone
-from database import db
+from common.database import db
 
 async def fix_gap():
     await db.connect()
