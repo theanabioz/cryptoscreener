@@ -36,7 +36,7 @@ async def get_coins(ids: str = None, strategy: str = None):
             cs.bb_lower,
             cs.market_cap,
             cs.cmc_id,
-            cs.sparkline
+            cs.sparkline_in_7d
         FROM latest_data ld
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
         WHERE 1=1
@@ -83,15 +83,18 @@ async def get_coins(ids: str = None, strategy: str = None):
             else:
                 image_url = f"https://assets.coincap.io/assets/icons/{row['symbol'].split('/')[0].lower()}@2x.png"
 
-            # Спарклайн из JSON строки
-            sparkline_data = []
-            if row['sparkline']:
+            # Спарклайн
+            sparkline_final = {"price": []}
+            if row['sparkline_in_7d']:
                 try:
-                    # asyncpg может возвращать уже декодированный json или строку
-                    if isinstance(row['sparkline'], str):
-                        sparkline_data = json.loads(row['sparkline'])
-                    else:
-                        sparkline_data = row['sparkline'] # Если это уже list
+                    val = row['sparkline_in_7d']
+                    if isinstance(val, str):
+                        val = json.loads(val)
+                    
+                    if isinstance(val, dict) and "price" in val:
+                        sparkline_final = val
+                    elif isinstance(val, list):
+                        sparkline_final = {"price": val}
                 except:
                     pass
 
@@ -110,9 +113,7 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "ema50": row['ema_50'],
                 "bb_upper": row['bb_upper'],
                 "bb_lower": row['bb_lower'],
-                "sparkline_in_7d": {
-                    "price": sparkline_data
-                }
+                "sparkline_in_7d": sparkline_final
             })
             
         return result

@@ -64,7 +64,9 @@ async def process_batch(symbols):
             
             # Спарклайн (последние 24 точки или меньше)
             sparkline_data = close.tail(24).tolist()
-            sparkline_json = json.dumps(sparkline_data)
+            # Фронтенд ожидает объект { price: [...] }
+            sparkline_obj = {"price": sparkline_data}
+            sparkline_json = json.dumps(sparkline_obj)
             
             # --- СОХРАНЕНИЕ В DB ---
             # Upsert (Вставить или Обновить)
@@ -73,7 +75,7 @@ async def process_batch(symbols):
                     symbol, updated_at, 
                     current_price, volume_24h, 
                     rsi_14, macd, macd_signal, macd_hist, ema_50, bb_upper, bb_lower,
-                    sparkline
+                    sparkline_in_7d
                 ) VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 ON CONFLICT (symbol) DO UPDATE SET
                     updated_at = NOW(),
@@ -86,7 +88,7 @@ async def process_batch(symbols):
                     ema_50 = EXCLUDED.ema_50,
                     bb_upper = EXCLUDED.bb_upper,
                     bb_lower = EXCLUDED.bb_lower,
-                    sparkline = EXCLUDED.sparkline;
+                    sparkline_in_7d = EXCLUDED.sparkline_in_7d;
             """
             
             await db.pool.execute(
