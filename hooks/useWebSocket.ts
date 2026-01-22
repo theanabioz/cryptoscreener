@@ -28,6 +28,7 @@ export const useWebSocket = () => {
         console.log('✅ WS Connected to:', WS_URL);
       };
 
+      let messageCount = 0;
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -35,6 +36,13 @@ export const useWebSocket = () => {
           if (data.s && data.k) {
             // Strip /USDT to match frontend symbol (e.g. "BTC/USDT" -> "BTC")
             const cleanSymbol = data.s.split('/')[0];
+            
+            // Debug: log every 100th message
+            messageCount++;
+            if (messageCount % 100 === 0) {
+                console.log(`📡 WS Update [${messageCount}]:`, cleanSymbol, data.k[4]);
+            }
+
             updatePrice(cleanSymbol, data.k);
           }
         } catch (e) {
