@@ -91,7 +91,7 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
 
   // Calculate Indicators dynamically based on Klines
   const dynamicIndicators = useMemo(() => {
-      if (!klines || klines.length < 50) return { ...coin, current_price: currentPrice } || {}; // Fallback to static data if not enough klines
+      if (!klines || klines.length < 50) return { ...coin, current_price: currentPrice }; // Fallback to static data if not enough klines
 
       const closePrices = klines.map(k => k.close);
       
