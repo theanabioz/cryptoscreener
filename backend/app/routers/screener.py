@@ -44,6 +44,7 @@ async def get_coins(ids: str = None, strategy: str = None):
             cs.macd,
             cs.ema_50,
             cs.market_cap,
+            cs.cmc_id,
             sp.sparkline
         FROM latest_data ld
         LEFT JOIN coin_status cs ON ld.symbol = cs.symbol
@@ -84,12 +85,18 @@ async def get_coins(ids: str = None, strategy: str = None):
             # Доп. фильтрация на Python (если сложно в SQL)
             if strategy == 'volatility' and abs(change_pct) < 5:
                 continue
+            
+            # Генерация URL логотипа
+            if row['cmc_id']:
+                image_url = f"https://s2.coinmarketcap.com/static/img/coins/64x64/{row['cmc_id']}.png"
+            else:
+                image_url = f"https://assets.coincap.io/assets/icons/{row['symbol'].split('/')[0].lower()}@2x.png"
 
             result.append({
                 "id": row['symbol'].replace('/', '').lower(),
                 "symbol": row['symbol'].split('/')[0],
                 "name": row['symbol'].split('/')[0],
-                "image": f"https://assets.coincap.io/assets/icons/{row['symbol'].split('/')[0].lower()}@2x.png",
+                "image": image_url,
                 "current_price": price,
                 "price_change_percentage_24h": round(change_pct, 2),
                 "market_cap": row['market_cap'] or 0,
