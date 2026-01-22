@@ -8,13 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Копируем зависимости (они теперь общие для всех движков)
+# Копируем и устанавливаем зависимости ПЕРЕД копированием кода
 COPY engines/indicator-engine/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir uvicorn[standard] websockets ccxt[pro]
 
-# Копируем ВЕСЬ бэкенд в контейнер
+# Копируем ВЕСЬ бэкенд
 COPY . .
 
-# По умолчанию CMD будет переопределяться в docker-compose
+# PYTHONPATH гарантирует, что импорты 'common' и 'api_v2' будут работать
+ENV PYTHONPATH=/app
+
 CMD ["python3", "engines/indicator-engine/scheduler.py"]
