@@ -97,6 +97,22 @@ services:
       redis: { condition: service_healthy }
     restart: always
 
+  # 7. Notification Engine (Bot & Alerts)
+  notification-engine:
+    build:
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile
+    container_name: crypto_notification_engine
+    command: python3 engines/notification-engine/main.py
+    env_file: .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      PYTHONPATH: .
+    depends_on:
+      timescaledb: { condition: service_healthy }
+    restart: always
+
   # Базовая инфраструктура (оставляем старую)
   timescaledb:
     image: timescale/timescaledb:latest-pg14
