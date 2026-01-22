@@ -3,6 +3,7 @@
 import { ChakraProvider, extendTheme, type ThemeConfig } from '@chakra-ui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
+import { useWebSocket } from '@/hooks/useWebSocket'
 
 // 1. Config for Dark Mode
 const config: ThemeConfig = {
@@ -44,6 +45,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       },
     },
   }))
+
+  // Start WebSocket connection globally
+  useWebSocket();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {

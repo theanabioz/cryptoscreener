@@ -2,6 +2,7 @@ import asyncio
 import ccxt.pro as ccxt
 import logging
 import os
+import json
 from datetime import datetime, timezone
 from database import db
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 async def stream_symbol(exchange, symbol, queue):
     """
     Постоянно слушает OHLCV для одного символа и кладет обновления в очередь.
+    Также ПУБЛИКУЕТ в Redis для мгновенного доступа (WebSockets).
     """
     retries = 0
     while True:
@@ -22,7 +24,20 @@ async def stream_symbol(exchange, symbol, queue):
             if candles:
                 # Берем последнюю свечу (она самая свежая)
                 latest_candle = candles[-1]
-                # Кладем в очередь: (symbol, candle_data)
+                
+                # 1. Отправляем в Redis (Fire-and-forget)
+                if db.redis:
+                    try:
+                        # Формат: s=symbol, k=candle [t,o,h,l,c,v]
+                        payload = {
+                            "s": symbol,
+                            "k": latest_candle
+                        }
+                        await db.redis.publish("crypto_updates", json.dumps(payload))
+                    except Exception as re:
+                        logger.error(f"Redis publish error: {re}")
+
+                # 2. Кладем в очередь для записи в БД
                 await queue.put((symbol, latest_candle))
                 
             retries = 0 # Сброс счетчика ошибок при успехе

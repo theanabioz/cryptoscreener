@@ -7,6 +7,7 @@ import { PriceFlash } from '../ui/PriceFlash'
 import { useHaptic } from '@/hooks/useHaptic'
 import Link from 'next/link'
 import { Sparkline } from '../ui/Sparkline'
+import { usePriceStore } from '@/store/usePriceStore'
 
 interface AccordionCoinItemProps {
   coin: Coin;
@@ -15,12 +16,27 @@ interface AccordionCoinItemProps {
 export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
   const { isOpen, onToggle } = useDisclosure();
   const { impact } = useHaptic();
+  
+  // 1. Subscribe to live price updates
+  const liveData = usePriceStore((state) => state.getPrice(coin.symbol));
+  
+  // 2. Determine effective price
+  const currentPrice = liveData?.c ?? coin.current_price;
 
-  const isPositive = (coin.price_change_percentage_24h || 0) >= 0;
+  // 3. Recalculate 24h change if we have live data
+  let priceChange = coin.price_change_percentage_24h;
+  if (liveData && coin.current_price && coin.current_price !== 0) {
+      // Back-calculate 24h Open Price from the snapshot data
+      const open24h = coin.current_price / (1 + (coin.price_change_percentage_24h / 100));
+      // Calculate new change %
+      priceChange = ((currentPrice - open24h) / open24h) * 100;
+  }
+
+  const isPositive = (priceChange || 0) >= 0;
   const badgeColor = isPositive ? 'green' : 'red';
   
   // Trend Logic
-  const isBullish = coin.ema50 ? coin.current_price > coin.ema50 : null;
+  const isBullish = coin.ema50 ? currentPrice > coin.ema50 : null;
   
   const handleToggle = () => {
     impact('light');
@@ -96,7 +112,7 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
         {/* Right: Price + Change + Chevron */}
         <HStack spacing={2} w="35%" justify="flex-end">
           <VStack align="end" spacing={0}>
-            <PriceFlash price={coin.current_price} color="white" fontWeight="bold" fontSize="sm" />
+            <PriceFlash price={currentPrice} color="white" fontWeight="bold" fontSize="sm" />
             <Badge 
               colorScheme={badgeColor} 
               variant="solid" 
@@ -107,7 +123,7 @@ export const AccordionCoinItem = ({ coin }: AccordionCoinItemProps) => {
               alignItems="center"
             >
               {isPositive ? <TrendingUp size={10} style={{marginRight: '2px'}}/> : <TrendingDown size={10} style={{marginRight: '2px'}}/>}
-              {Math.abs(coin.price_change_percentage_24h).toFixed(1)}%
+              {Math.abs(priceChange).toFixed(1)}%
             </Badge>
           </VStack>
           

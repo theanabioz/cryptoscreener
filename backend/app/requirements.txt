@@ -7,3 +7,4 @@ pandas==2.2.0
 numpy==1.26.3
 ccxt>=4.4.0
 aiohttp<3.10.0
+redis>=5.0.0

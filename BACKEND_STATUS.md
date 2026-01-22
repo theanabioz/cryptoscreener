@@ -25,8 +25,8 @@
 ## 🚀 Roadmap
 1. **[COMPLETED] Real-time Engine & History.**
 2. **[COMPLETED] Production Hardening & Performance Fixes.**
-3. **[NEXT] WebSocket + Redis Architecture:**
-   - Implement Redis Pub/Sub for instant price propagation.
-   - Replace HTTP Polling with a dedicated WebSocket server.
-   - Enable "tick-by-tick" price updates on charts and lists.
+3. **[COMPLETED] WebSocket + Redis Architecture:**
+   - Implemented Redis Pub/Sub (`streamer.py` -> Redis).
+   - Created WebSocket endpoint (`routers/ws.py` -> Client).
+   - Replaced HTTP Polling with real-time push.
 4. **[PLANNED] Alerts & Notifications.**

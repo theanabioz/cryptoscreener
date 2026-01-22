@@ -11,8 +11,11 @@ services:
       - .env
     environment:
       POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
     depends_on:
       timescaledb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: always
 
@@ -25,8 +28,11 @@ services:
       - .env
     environment:
       POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
     depends_on:
       timescaledb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: always
 
@@ -39,8 +45,11 @@ services:
       - .env
     environment:
       POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
     depends_on:
       timescaledb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: always
 
@@ -73,6 +82,18 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
+      retries: 5
+    restart: always
+
+  # Redis (Message Broker)
+  redis:
+    image: redis:7-alpine
+    container_name: crypto_redis
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
       retries: 5
     restart: always
 

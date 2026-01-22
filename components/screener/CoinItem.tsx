@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react'
 import { fetchKlines } from '@/hooks/useKlines'
 
 import { PriceFlash } from '../ui/PriceFlash'
+import { usePriceStore } from '@/store/usePriceStore'
 
 interface CoinItemProps {
   coin: Coin;
@@ -18,15 +19,28 @@ interface CoinItemProps {
 }
 
 export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
-  const isPositive = (coin.price_change_percentage_24h || 0) >= 0;
-  const badgeColor = isPositive ? 'green' : 'red';
-  
   const { impact } = useHaptic();
   const queryClient = useQueryClient();
   
   // Intersection Observer for Lazy Prefetching
   const ref = useRef<HTMLDivElement>(null);
   const [hasPrefetched, setHasPrefetched] = useState(false);
+
+  // 1. Subscribe to live price updates
+  const liveData = usePriceStore((state) => state.getPrice(coin.symbol));
+  
+  // 2. Determine effective price
+  const currentPrice = liveData?.c ?? coin.current_price ?? 0;
+
+  // 3. Recalculate 24h change
+  let change = coin.price_change_percentage_24h ?? 0;
+  if (liveData && coin.current_price && coin.current_price !== 0) {
+      const open24h = coin.current_price / (1 + (coin.price_change_percentage_24h / 100));
+      change = ((currentPrice - open24h) / open24h) * 100;
+  }
+
+  const isPositive = change >= 0;
+  const badgeColor = isPositive ? 'green' : 'red';
 
   useEffect(() => {
       if (!coin.symbol || hasPrefetched || !ref.current) return;
@@ -56,14 +70,12 @@ export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
       return () => observer.disconnect();
   }, [coin.symbol, hasPrefetched, queryClient]);
 
-  // Safe access to properties
-  const price = coin.current_price || 0;
-  const change = coin.price_change_percentage_24h || 0;
+  // Sparkline data
   const sparklineData = coin.sparkline_in_7d?.price || [];
 
-  // Sparkline color based on data trend
-  const sparklineColor = sparklineData.length >= 2
-    ? (sparklineData[sparklineData.length - 1] >= sparklineData[0] ? 'green.400' : 'red.400')
+  // Sparkline color based on data trend (Live Price vs Start of 7d)
+  const sparklineColor = sparklineData.length > 0
+    ? (currentPrice >= sparklineData[0] ? 'green.400' : 'red.400')
     : (isPositive ? 'green.400' : 'red.400');
 
   return (
@@ -112,7 +124,7 @@ export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
 
           {/* Right: Price + Change */}
           <VStack align="end" spacing={0} w="35%">
-            <PriceFlash price={price} color="white" fontWeight="medium" fontSize="sm" />
+            <PriceFlash price={currentPrice} color="white" fontWeight="medium" fontSize="sm" />
             <Badge 
               colorScheme={badgeColor} 
               variant="solid" 
