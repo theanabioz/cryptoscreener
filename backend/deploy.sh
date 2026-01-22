@@ -34,29 +34,29 @@ until docker inspect --format "{{json .State.Health.Status}}" crypto_db | grep -
 done
 echo "✅ Database is Healthy!"
 
-# 5. СИНХРОНИЗАЦИЯ ПАРОЛЯ (Критический этап)
+# 5. СИНХРОНИЗАЦИЯ ПАРОЛЯ
 echo "🔐 Syncing Database Password..."
 docker exec crypto_db psql -U $POSTGRES_USER -c "ALTER USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';"
 
-# 6. ЗАКРЫТИЕ ДЫР В ДАННЫХ (Gap Filler)
+# 6. СБОРКА ОБРАЗА (Важный шаг, которого не хватало)
+echo "🏗 Building API image (to include new scripts)..."
+docker compose build api
+
+# 7. ЗАКРЫТИЕ ДЫР В ДАННЫХ (Gap Filler)
 echo "📥 Running Gap Filler to fetch missing candles..."
-# Запускаем в контексте контейнера api, так как там есть все зависимости и доступ к БД
 docker compose run --rm api python3 fill_gaps.py
 
-# 7. Запускаем всё остальное с пересборкой
-echo "🏗 Building and Starting Services..."
-docker compose up -d --build
+# 8. Запускаем всё остальное
+echo "🚀 Starting all services..."
+docker compose up -d
 
-# 7. Финальная проверка
+# 9. Финальная проверка
 echo "🔍 Verifying API..."
 sleep 5
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/coins)
 
 if [ "$HTTP_CODE" -eq 200 ]; then
     echo "✅ DEPLOYMENT SUCCESSFUL! API is responding (200 OK)."
-    echo "📊 Coin List:"
-    curl -s http://localhost:8000/api/coins | head -c 100
-    echo "..."
 else
     echo "❌ DEPLOYMENT FAILED. API returned status $HTTP_CODE"
     docker logs crypto_api --tail 20
