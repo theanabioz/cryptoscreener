@@ -7,7 +7,7 @@ import { Sparkline } from '../ui/Sparkline'
 import Link from 'next/link'
 import { useHaptic } from '@/hooks/useHaptic'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchKlines } from '@/hooks/useKlines'
 
 import { PriceFlash } from '../ui/PriceFlash'
@@ -23,17 +23,38 @@ export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
   
   const { impact } = useHaptic();
   const queryClient = useQueryClient();
+  
+  // Intersection Observer for Lazy Prefetching
+  const ref = useRef<HTMLDivElement>(null);
+  const [hasPrefetched, setHasPrefetched] = useState(false);
 
-  // Prefetch klines for the first 15 visible coins to make navigation instant
   useEffect(() => {
-      if (index < 15 && coin.symbol) {
-          queryClient.prefetchQuery({
-              queryKey: ['klines', coin.symbol, '1h', 200], // Default timeframe/limit on Detail Page
-              queryFn: () => fetchKlines(coin.symbol, '1h', 200),
-              staleTime: 1000 * 60 * 5, // 5 minutes cache
-          });
-      }
-  }, [coin.symbol, index, queryClient]);
+      if (!coin.symbol || hasPrefetched || !ref.current) return;
+
+      const observer = new IntersectionObserver(
+          (entries) => {
+              if (entries[0].isIntersecting) {
+                  // Coin is visible (or close to), prefetch data
+                  queryClient.prefetchQuery({
+                      queryKey: ['klines', coin.symbol, '1h', 200],
+                      queryFn: () => fetchKlines(coin.symbol, '1h', 200),
+                      staleTime: 1000 * 60 * 5,
+                  });
+                  
+                  setHasPrefetched(true);
+                  observer.disconnect(); // Stop observing once triggered
+              }
+          },
+          { 
+              rootMargin: '200px', // Prefetch 200px before item comes into view
+              threshold: 0.1 
+          }
+      );
+
+      observer.observe(ref.current);
+
+      return () => observer.disconnect();
+  }, [coin.symbol, hasPrefetched, queryClient]);
 
   // Safe access to properties
   const price = coin.current_price || 0;
@@ -52,6 +73,7 @@ export const CoinItem = ({ coin, index = 0 }: CoinItemProps) => {
       onClick={() => impact('light')}
     >
       <Box 
+        ref={ref}
         w="full" 
         p={3} 
         borderBottomWidth="1px" 
