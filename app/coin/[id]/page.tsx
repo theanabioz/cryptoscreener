@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { MOCK_COINS } from '@/lib/mockData';
 import { DetailChart } from '@/components/chart/DetailChart';
 import { TechnicalIndicators } from '@/components/chart/TechnicalIndicators';
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useEffect } from 'react';
 import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 import { useWatchlistStore } from '@/store/useWatchlistStore';
 import { useHaptic } from '@/hooks/useHaptic';
