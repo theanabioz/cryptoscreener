@@ -8,7 +8,7 @@ export interface Kline {
   close: number;
 }
 
-const fetchKlines = async (symbol: string, interval: string, limit: number): Promise<Kline[]> => {
+export const fetchKlines = async (symbol: string, interval: string, limit: number): Promise<Kline[]> => {
   // Ensure we request the full pair (e.g., BTC -> BTCUSDT)
   const pair = symbol.toUpperCase().includes('USDT') ? symbol : `${symbol}USDT`;
   const res = await fetch(`/api/klines/${pair}?interval=${interval}&limit=${limit}`);

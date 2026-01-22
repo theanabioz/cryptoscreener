@@ -11,12 +11,14 @@ import { useTelegramBackButton } from '@/hooks/useTelegramBackButton';
 import { useWatchlistStore } from '@/store/useWatchlistStore';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useCoins } from '@/hooks/useCoins';
-import { useKlines } from '@/hooks/useKlines';
+import { useKlines, fetchKlines } from '@/hooks/useKlines';
 import { PriceFlash } from '@/components/ui/PriceFlash';
 import { calculateRSI, calculateMACD, calculateEMA, calculateBollinger } from '@/lib/indicators';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function CoinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   
@@ -39,6 +41,19 @@ export default function CoinDetailPage({ params }: { params: Promise<{ id: strin
   // Find coin in loaded data
   const coin = coins?.find(c => c.id === id);
   const symbol = coin?.symbol || '';
+
+  // Prefetch neighboring timeframes for instant switching UX
+  useEffect(() => {
+      if (!symbol) return;
+      const tfs = ['15m', '4h', '1d']; // Most common alternatives
+      tfs.forEach(tf => {
+          queryClient.prefetchQuery({
+              queryKey: ['klines', symbol, tf, 200],
+              queryFn: () => fetchKlines(symbol, tf, 200),
+              staleTime: 1000 * 60 // 1 minute
+          });
+      });
+  }, [symbol, queryClient]);
 
   // Load Klines for Chart and Indicators
   const apiInterval = activeTf.toLowerCase();
