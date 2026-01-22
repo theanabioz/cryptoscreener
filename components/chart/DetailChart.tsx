@@ -130,13 +130,14 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
             low: Math.min(lastK.low, basePrice),
             close: basePrice,
           });
-      } else {
-          // It's a new candle (time bucket changed)
+      } else if (lastK) {
+          // It's a new candle (time bucket changed). 
+          // Open price MUST be equal to last candle's close price.
           seriesRef.current.update({
             time: candleTime as any,
-            open: basePrice,
-            high: basePrice,
-            low: basePrice,
+            open: lastK.close,
+            high: Math.max(lastK.close, basePrice),
+            low: Math.min(lastK.close, basePrice),
             close: basePrice,
           });
       }

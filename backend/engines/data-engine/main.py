@@ -64,8 +64,21 @@ async def run_streamer():
                 for symbol, ticker in tickers.items():
                     if not symbol.endswith('/USDT'): continue
                     
+                    # Формируем данные для Redis и БД
+                    # ВАЖНО: ticker['open'] в Binance - это открытие за 24 часа.
+                    # Для 1м свечи мы используем текущую цену (last) как базу.
                     timestamp = ticker['timestamp'] or int(datetime.now().timestamp() * 1000)
-                    candle = [timestamp, ticker['open'], ticker['high'], ticker['low'], ticker['last'], ticker['baseVolume']]
+                    current_price = ticker['last']
+                    
+                    # Для новой свечи в этой минуте OHLC изначально равны текущей цене
+                    candle = [
+                        timestamp,
+                        current_price, # open
+                        current_price, # high
+                        current_price, # low
+                        current_price, # close
+                        ticker['baseVolume']
+                    ]
 
                     # 1. Мгновенный пуш в Redis для WebSockets
                     if db.redis:
