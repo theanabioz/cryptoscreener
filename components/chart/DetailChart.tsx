@@ -154,7 +154,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
     priceLineRef.current = seriesRef.current.createPriceLine({
       price: basePrice,
       color: 'transparent',
-      lineWidth: 0,
+      lineWidth: 1,
       axisLabelVisible: true,
       title: '',
       lineVisible: false,
