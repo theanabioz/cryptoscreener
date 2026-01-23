@@ -173,10 +173,16 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         timerRef.current.style.display = 'none';
       } else {
         timerRef.current.style.display = 'block';
-        // Позиционируем прямо под или над ценой, чтобы выглядело как единый блок
-        timerRef.current.style.top = `${y + 14}px`; 
+        
+        // Определяем цвет на основе текущей свечи (как это делает график)
+        const isCurrentUp = basePrice >= (lastK?.open || basePrice);
+        const activeColor = isCurrentUp ? '#48BB78' : '#F56565';
+        
+        // Позиционируем впритык под метку цены. 
+        // Стандартная метка имеет высоту ~18-20px и центрирована по Y.
+        timerRef.current.style.top = `${y + 10}px`; 
         timerRef.current.innerText = timerStr;
-        timerRef.current.style.backgroundColor = isPositive ? '#48BB78' : '#F56565';
+        timerRef.current.style.backgroundColor = activeColor;
       }
     };
 
@@ -184,7 +190,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
     updateTimer();
 
     return () => clearInterval(interval);
-  }, [activeTf, basePrice, klines, isPositive]);
+  }, [activeTf, basePrice, klines]); // Убрали зависимость от isPositive, теперь считаем сами
 
   return (
     <Box w="full">
@@ -226,7 +232,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         {/* The Actual Chart */}
         <Box ref={chartContainerRef} w="full" h="100%" />
 
-        {/* Dynamic Candle Countdown (Matches Price Label) */}
+        {/* TradingView-like Candle Countdown */}
         <div
           ref={timerRef}
           style={{
@@ -234,16 +240,18 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
             right: '0px', 
             zIndex: 20,
             color: 'white',
-            fontSize: '11px',
-            fontWeight: 'bold',
-            padding: '2px 4px',
+            fontSize: '10px',
+            fontWeight: '500',
+            padding: '0px 4px',
             pointerEvents: 'none',
-            fontFamily: 'monospace',
+            // Используем тот же шрифт, что и в канвасе графика
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
             display: 'none',
-            minWidth: '45px',
+            minWidth: '54px', // Чуть шире для стабильности
             textAlign: 'center',
-            borderTopLeftRadius: '2px',
+            borderTopLeftRadius: '0px', // Плоский стык сверху
             borderBottomLeftRadius: '2px',
+            lineHeight: '1.4',
           }}
         />
       </Box>
