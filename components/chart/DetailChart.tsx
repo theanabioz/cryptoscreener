@@ -138,29 +138,16 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
     }
   }, [basePrice, activeTf, klines]);
 
-  // Candle Countdown Logic
-  const priceLineRef = useRef<any>(null);
+  // Candle Countdown Overlay Logic
+  const timerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!seriesRef.current || !activeTf) return;
-
-    // Remove old line if exists
-    if (priceLineRef.current) {
-      seriesRef.current.removePriceLine(priceLineRef.current);
-    }
-
-    // Create a "ghost" price line for the timer
-    // We set lineVisible: false to only show the label on the axis
-    priceLineRef.current = seriesRef.current.createPriceLine({
-      price: basePrice,
-      color: 'transparent',
-      lineWidth: 1,
-      axisLabelVisible: true,
-      title: '',
-      lineVisible: false,
-    });
+    if (!seriesRef.current || !chartRef.current || !timerRef.current) return;
 
     const updateTimer = () => {
+      if (!seriesRef.current || !timerRef.current) return;
+
+      // 1. Calculate remaining time
       const getTfSeconds = (tf: string): number => {
         const upper = tf.toUpperCase();
         const val = parseInt(upper);
@@ -175,35 +162,29 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       const tfSeconds = getTfSeconds(activeTf);
       const now = Math.floor(Date.now() / 1000);
       const remaining = tfSeconds - (now % tfSeconds);
-
-      const h = Math.floor(remaining / 3600);
       const m = Math.floor((remaining % 3600) / 60);
       const s = remaining % 60;
-      
-      let timerStr = '';
-      if (h > 0) timerStr += `${h}:`;
-      timerStr += `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      const timerStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 
-      if (priceLineRef.current) {
-        priceLineRef.current.applyOptions({
-          price: basePrice,
-          title: timerStr,
-        });
+      // 2. Get Y coordinate of the current price
+      const y = seriesRef.current.priceToCoordinate(basePrice);
+      
+      if (y === null) {
+        timerRef.current.style.display = 'none';
+      } else {
+        timerRef.current.style.display = 'block';
+        // Adjusting position to sit right on the scale area
+        // We subtract half of height to center it with the price label
+        timerRef.current.style.top = `${y - 9}px`; 
+        timerRef.current.innerText = timerStr;
       }
     };
 
     const interval = setInterval(updateTimer, 1000);
     updateTimer();
 
-    return () => {
-      clearInterval(interval);
-      if (priceLineRef.current && seriesRef.current) {
-        try {
-            seriesRef.current.removePriceLine(priceLineRef.current);
-        } catch(e) {}
-      }
-    };
-  }, [activeTf, basePrice]);
+    return () => clearInterval(interval);
+  }, [activeTf, basePrice, klines]);
 
   return (
     <Box w="full">
@@ -241,7 +222,29 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
             <Text color="red.400" fontSize="sm">Error loading chart</Text>
           </Center>
         )}
+        
+        {/* The Actual Chart */}
         <Box ref={chartContainerRef} w="full" h="100%" />
+
+        {/* Professional Candle Countdown Overlay (TradingView Style) */}
+        <div
+          ref={timerRef}
+          style={{
+            position: 'absolute',
+            right: '8px', // Slightly offset from the very edge
+            zIndex: 20,
+            backgroundColor: '#1A202C',
+            color: '#E2E8F0',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            padding: '1px 4px',
+            borderRadius: '2px',
+            pointerEvents: 'none',
+            border: '1px solid #4A5568',
+            fontFamily: 'monospace',
+            display: 'none'
+          }}
+        />
       </Box>
     </Box>
   );
