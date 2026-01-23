@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # ... (остальные сервисы без изменений)
   api_v2:
     build: 
       context: .
@@ -54,11 +53,9 @@ services:
       dockerfile: engines/indicator-engine/Dockerfile
     command: python3 engines/indicator-engine/worker.py
     env_file: .env
-        # ЖЕСТКОЕ ОГРАНИЧЕНИЕ (Охлаждение)
-        cpus: 0.8
-        mem_limit: 256M
-        environment:
-    
+    cpus: 0.8
+    mem_limit: 256M
+    environment:
       POSTGRES_HOST: timescaledb
       REDIS_HOST: redis
       PYTHONPATH: .
