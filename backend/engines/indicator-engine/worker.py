@@ -7,7 +7,7 @@ import pandas_ta as ta
 import numpy as np
 import warnings
 
-# Глушим шум
+# Глобальное подавление в коде
 warnings.filterwarnings("ignore")
 
 # Импорты из common
@@ -30,6 +30,7 @@ async def process_task(symbol):
         df.set_index('time', inplace=True)
         
         results = {}
+        # Используем современный стандарт частот
         timeframes = {'1m': '1min', '5m': '5min', '15m': '15min', '1h': '1h', '4h': '4h', '1d': '1D'}
 
         for tf_code, tf_resample in timeframes.items():
@@ -40,7 +41,7 @@ async def process_task(symbol):
 
             if len(df_tf) < 52: continue
 
-            # ВЕКТОРНЫЙ РАСЧЕТ (Самый быстрый способ в pandas-ta)
+            # Расчет
             df_tf.ta.cores = 1
             df_tf.ta.rsi(length=14, append=True)
             df_tf.ta.macd(append=True)
@@ -48,7 +49,7 @@ async def process_task(symbol):
             df_tf.ta.ema(length=200, append=True)
             df_tf.ta.bbands(append=True)
             df_tf.ta.supertrend(append=True)
-            # Добавьте другие если нужно...
+            df_tf.ta.ichimoku(append=True)
 
             # Упаковка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
@@ -57,7 +58,7 @@ async def process_task(symbol):
                              if k not in ['open', 'high', 'low', 'close', 'volume']}
             results[tf_code] = indicator_data
 
-        # UPDATE JSONB
+        # UPDATE
         query_update = """
             UPDATE coin_status SET updated_at = NOW(), current_price = $1,
                 indicators_1m = $2, indicators_5m = $3, indicators_15m = $4,
@@ -75,8 +76,8 @@ async def process_task(symbol):
         return False
 
 async def run_worker():
-    worker_id = os.environ.get('HOSTNAME', 'worker-1')
-    print(f"🚀 {worker_id} started (Vectorized Mode)", flush=True)
+    worker_id = os.environ.get('HOSTNAME', 'worker')
+    print(f"🚀 {worker_id} started (Solid v3.5)", flush=True)
     await db.connect()
     
     stream_key = "ta_tasks"
@@ -84,14 +85,14 @@ async def run_worker():
 
     while True:
         try:
-            # Читаем новые задачи
             response = await db.redis.xreadgroup(group_name, worker_id, {stream_key: ">"}, count=1, block=2000)
             if response:
                 msg_id, data = response[0][1][0]
                 symbol = data['symbol']
-                # print(f"  [{worker_id}] Processing {symbol}")
-                success = await process_task(symbol)
+                print(f"🛠️ [WORKING] {symbol}", flush=True)
+                await process_task(symbol)
                 await db.redis.xack(stream_key, group_name, msg_id)
+                print(f"✅ [DONE] {symbol}", flush=True)
         except Exception as e:
             if "NOGROUP" in str(e):
                 try: await db.redis.xgroup_create(stream_key, group_name, id="0", mkstream=True)

@@ -61,6 +61,7 @@ services:
       POSTGRES_HOST: timescaledb
       REDIS_HOST: redis
       PYTHONPATH: .
+      PYTHONWARNINGS: ignore
     depends_on:
       redis: { condition: service_healthy }
     restart: always
