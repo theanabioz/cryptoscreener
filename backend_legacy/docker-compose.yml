@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # Основной API (FastAPI)
+  api:
+    build: ./app
+    container_name: crypto_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # Indicator Engine v3 (Distributed & Stateful)
+  indicator-engine:
+    build:
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile
+    container_name: crypto_indicator_engine
+    command: python3 engines/indicator-engine/main.py
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # Streamer (Realtime WebSocket данные)
+  streamer:
+    build: ./app
+    container_name: crypto_streamer
+    command: python3 streamer.py
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: timescaledb
+      REDIS_HOST: redis
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  # Сервис загрузки данных
+  collector:
+    build: ./collector
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: timescaledb
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: "no"
+
+  # База данных
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: crypto_db
+    env_file:
+      - .env
+    volumes:
+      - ts_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    # ports:
+    #   - "5432:5432" # ЗАКРЫТО В ЦЕЛЯХ БЕЗОПАСНОСТИ (Был взлом)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # Redis (Message Broker)
+  redis:
+    image: redis:7-alpine
+    container_name: crypto_redis
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
+volumes:
+  ts_data:

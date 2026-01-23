@@ -28,7 +28,10 @@ def run_command(ssh, command, stream_output=True):
     return True, output
 
 def main():
-    print(f"🔄 Connecting to {HOST}...")
+    print(f"🔥 STARTING FULL BACKEND REBUILD ON {HOST}...")
+    print("⚠️  This will delete the 'backend' folder on the server and rebuild from Git.")
+    print("🛡️  Database volumes will be PRESERVED.")
+    
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -36,47 +39,47 @@ def main():
         print(f"✅ Connected successfully.")
 
         # 1. Locate Project
-        # Try to find a directory that contains 'backend' and 'docker-compose.yml'
-        search_cmd = "find ~ -type d -name 'backend' -maxdepth 3 2>/dev/null"
-        success, out = run_command(ssh, search_cmd, stream_output=False)
+        backend_dir = "/root/cryptoscreener/backend"
+        project_root = "/root/cryptoscreener"
         
-        backend_dir = None
-        if success and out.strip():
-            # e.g. /root/miniapp/backend
-            backend_dir = out.strip().split('\n')[0]
-            print(f"📂 Found backend at: {backend_dir}")
-        else:
-            # Fallback
-            print("⚠️ 'backend' directory not found via find. Checking 'miniapp' folder...")
-            success, out = run_command(ssh, "ls -d ~/miniapp/backend", stream_output=False)
-            if success:
-                backend_dir = "~/miniapp/backend"
-            else:
-                print("❌ Could not locate project directory. Aborting.")
-                return
-
-        project_root = backend_dir.replace("/backend", "")
-        
-        # 2. Deployment Sequence
-        # Try 'docker compose' (v2) first, fallback to 'docker-compose' if needed, but assuming v2 given the error.
+        # 2. Rebuild Sequence
         dc = "docker compose"
         
         commands = [
+            # 1. Stop everything safely
+            f"cd {backend_dir} && {dc} down",
+            
+            # 2. NUCLEAR OPTION: Delete the dirty backend folder
+            # We move to root, delete backend, then verify it's gone
+            f"cd {project_root} && rm -rf backend",
+            f"echo '🗑️ Backend folder deleted.'",
+            
+            # 3. Restore Clean State from GitHub
             f"cd {project_root} && git fetch --all",
             f"cd {project_root} && git reset --hard origin/main",
-            f"cd {backend_dir} && {dc} down",
-            f"cd {backend_dir} && {dc} build indicator-engine",
-            f"cd {backend_dir} && {dc} up -d --remove-orphans",
+            f"echo '✨ Code restored from GitHub.'",
+            
+            # 4. Verify local lib presence (Debug step)
+            f"ls -l {backend_dir}/pandas_ta-0.4.71b0.tar.gz",
+            
+            # 5. Clean Docker Builder Cache (Fixes pip cache issues)
+            f"docker builder prune -f",
+            
+            # 6. Build and Start
+            # We force build to ensure the local tarball is used
+            f"cd {backend_dir} && {dc} up -d --build --remove-orphans",
+            
+            # 7. Check Status
             f"cd {backend_dir} && {dc} ps"
         ]
 
         for cmd in commands:
             success, _ = run_command(ssh, cmd)
             if not success:
-                print("❌ Deployment failed.")
+                print("❌ REBUILD FAILED. Please check logs.")
                 break
         
-        print("🚀 Deployment to remote server finished.")
+        print("🚀 Full Rebuild Complete!")
         ssh.close()
 
     except Exception as e:

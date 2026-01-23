@@ -44,5 +44,6 @@ next-env.d.ts
 # data
 backend/data/
 *.tar.gz
+!backend/pandas_ta-0.4.71b0.tar.gz
 *.parquet
 /log*

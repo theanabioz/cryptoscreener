@@ -24,7 +24,11 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
 COPY engines/indicator-engine/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4. Copy Application Code
+# 4. Install local pandas-ta version
+COPY pandas_ta-0.4.71b0.tar.gz /tmp/
+RUN pip install --no-cache-dir /tmp/pandas_ta-0.4.71b0.tar.gz && rm /tmp/pandas_ta-0.4.71b0.tar.gz
+
+# 5. Copy Application Code
 # We are building from 'backend/' context, so we can copy 'common'
 COPY common /app/common
 COPY engines/indicator-engine /app/engines/indicator-engine
