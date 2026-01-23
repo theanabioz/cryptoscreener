@@ -28,12 +28,7 @@ async def get_coins(ids: str = None, strategy: str = None):
         )
         SELECT 
             ld.*,
-            cs.rsi_14,
-            cs.macd,
-            cs.macd_signal,
-            cs.ema_50,
-            cs.bb_upper,
-            cs.bb_lower,
+            cs.indicators_1h,
             cs.market_cap,
             cs.cmc_id,
             cs.sparkline_in_7d
@@ -43,11 +38,9 @@ async def get_coins(ids: str = None, strategy: str = None):
         ORDER BY cs.market_cap DESC NULLS LAST
     """
     
-    params = []
-    
-    # Фильтрация по стратегии
+    # Фильтрация (совместимость с JSONB)
     if strategy == 'rsi-oversold':
-        query_base += " AND cs.rsi_14 < 30"
+        query_base += " AND (cs.indicators_1h->>'RSI_14')::float < 30"
     elif strategy == 'strong-trend':
         query_base += " AND ld.current_price > cs.ema_50"
     elif strategy == 'pump-radar':
