@@ -19,11 +19,13 @@ services:
         condition: service_healthy
     restart: always
 
-  # TA Worker (Фоновый расчет индикаторов)
-  worker:
-    build: ./app
-    container_name: crypto_worker
-    command: python3 worker.py
+  # Indicator Engine v3 (Distributed & Stateful)
+  indicator-engine:
+    build:
+      context: .
+      dockerfile: engines/indicator-engine/Dockerfile
+    container_name: crypto_indicator_engine
+    command: python3 engines/indicator-engine/main.py
     env_file:
       - .env
     environment:

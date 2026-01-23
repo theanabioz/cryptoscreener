@@ -1,8 +1,8 @@
-FROM python:3.12-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-# 1. Системные зависимости (build-essential нужен для компиляции TA-Lib)
+# 1. System Dependencies (TA-Lib needs build-essential)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Сборка и установка C-библиотеки TA-Lib
+# 2. Build TA-Lib C Library
 RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     tar -xvzf ta-lib-0.4.0-src.tar.gz && \
     cd ta-lib/ && \
@@ -19,19 +19,18 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     make install && \
     cd .. && rm -rf ta-lib*
 
-# 3. Установка Python зависимостей
+# 3. Install Python Dependencies
 COPY engines/indicator-engine/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4. Установка вашей версии pandas-ta из архива
-COPY ./pandas_ta-0.4.71b0.tar.gz /tmp/
-RUN pip install --no-cache-dir /tmp/pandas_ta-0.4.71b0.tar.gz && rm /tmp/pandas_ta-0.4.71b0.tar.gz
+# 4. Copy Application Code
+# We are building from 'backend/' context, so we can copy 'common'
+COPY common /app/common
+COPY engines/indicator-engine /app/engines/indicator-engine
 
-# 5. Копирование кода
-COPY . .
-
-# Окружение
+# 5. Environment Variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python3", "engines/indicator-engine/scheduler.py"]
+# 6. Default Command (can be overridden by docker-compose)
+CMD ["python3", "engines/indicator-engine/main.py"]
