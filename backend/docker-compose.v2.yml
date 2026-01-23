@@ -53,8 +53,8 @@ services:
       dockerfile: engines/indicator-engine/Dockerfile
     command: python3 engines/indicator-engine/worker.py
     env_file: .env
-    cpus: 0.8
-    mem_limit: 256M
+    cpus: 1.0
+    mem_limit: 512M
     environment:
       POSTGRES_HOST: timescaledb
       REDIS_HOST: redis
@@ -110,7 +110,7 @@ services:
       PYTHONPATH: .
     depends_on:
       timescaledb: { condition: service_healthy }
-    restart: always
+      restart: always
 
   control-panel:
     image: amir20/dozzle:latest
