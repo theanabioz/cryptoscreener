@@ -6,15 +6,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируем и устанавливаем зависимости
 COPY engines/indicator-engine/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Устанавливаем pandas-ta напрямую из GitHub
-RUN pip install --no-cache-dir git+https://github.com/twopirllc/pandas-ta.git@master
 
 # Копируем ВЕСЬ бэкенд
 COPY . .
