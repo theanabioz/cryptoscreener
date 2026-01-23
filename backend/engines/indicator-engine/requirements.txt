@@ -8,3 +8,4 @@ numpy==1.26.3
 ccxt>=4.4.0
 redis>=5.0.0
 websockets>=12.0
+TA-Lib
