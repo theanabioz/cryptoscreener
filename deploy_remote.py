@@ -46,11 +46,15 @@ def main():
         dc = "docker compose"
         
         commands = [
+            # 0. Ensure directory and Restore .env file (Critical for 'down')
+            f"mkdir -p {backend_dir}",
+            f"echo 'POSTGRES_USER=postgres\nPOSTGRES_PASSWORD=password\nPOSTGRES_DB=postgres\nPOSTGRES_PORT=5432\nPOSTGRES_HOST=timescaledb\nREDIS_HOST=redis' > {backend_dir}/.env",
+            f"echo '✅ .env file restored.'",
+
             # 1. Stop everything safely
             f"cd {backend_dir} && {dc} down",
             
             # 2. NUCLEAR OPTION: Delete the dirty backend folder
-            # We move to root, delete backend, then verify it's gone
             f"cd {project_root} && rm -rf backend",
             f"echo '🗑️ Backend folder deleted.'",
             
@@ -59,8 +63,9 @@ def main():
             f"cd {project_root} && git reset --hard origin/main",
             f"echo '✨ Code restored from GitHub.'",
             
-            # 4. Verify local lib presence (Debug step)
-            f"ls -l {backend_dir}/pandas_ta-0.4.71b0.tar.gz",
+            # 4. Restore .env file AGAIN (because step 2 deleted it)
+            f"echo 'POSTGRES_USER=postgres\nPOSTGRES_PASSWORD=password\nPOSTGRES_DB=postgres\nPOSTGRES_PORT=5432\nPOSTGRES_HOST=timescaledb\nREDIS_HOST=redis' > {backend_dir}/.env",
+            f"echo '✅ .env file restored (again).'",
             
             # 5. Clean Docker Builder Cache (Fixes pip cache issues)
             f"docker builder prune -f",
