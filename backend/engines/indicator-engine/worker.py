@@ -7,8 +7,15 @@ import pandas_ta as ta
 import numpy as np
 import warnings
 
-# Глушим предупреждения библиотек (Pandas4Warning, DeprecationWarning и т.д.)
-warnings.filterwarnings("ignore")
+# Глубокое подавление предупреждений
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*deprecated.*")
+# Пытаемся поймать специфический Pandas4Warning если он доступен
+try:
+    from pandas.errors import PerformanceWarning
+    warnings.filterwarnings("ignore", category=PerformanceWarning)
+except: pass
 
 # Импорты из common
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -30,7 +37,8 @@ async def process_task(symbol):
         df.set_index('time', inplace=True)
         
         results = {}
-        timeframes = {'1m': '1min', '5m': '5min', '15m': '15min', '1h': '1h', '4h': '4h', '1d': '1D'}
+        # Используем только большие буквы для таймфреймов, чтобы не злить Pandas 3.0+
+        timeframes = {'1m': '1min', '5m': '5min', '15m': '15min', '1h': '1H', '4h': '4H', '1d': '1D'}
 
         for tf_code, tf_resample in timeframes.items():
             df_tf = df.resample(tf_resample).agg({
@@ -40,19 +48,21 @@ async def process_task(symbol):
 
             if len(df_tf) < 52: continue
 
-            # ПРЯМЫЕ ВЫЗОВЫ (Работает во всех версиях)
-            df_tf.ta.rsi(length=14, append=True)
-            df_tf.ta.macd(fast=12, slow=26, signal=9, append=True)
-            df_tf.ta.ema(length=20, append=True)
-            df_tf.ta.ema(length=50, append=True)
-            df_tf.ta.ema(length=100, append=True)
-            df_tf.ta.ema(length=200, append=True)
-            df_tf.ta.bbands(length=20, std=2, append=True)
-            df_tf.ta.atr(length=14, append=True)
-            df_tf.ta.adx(length=14, append=True)
-            df_tf.ta.mfi(length=14, append=True)
-            df_tf.ta.supertrend(period=10, multiplier=3, append=True)
-            df_tf.ta.ichimoku(append=True)
+            # Оборачиваем расчеты в игнорирование предупреждений
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                df_tf.ta.rsi(length=14, append=True)
+                df_tf.ta.macd(fast=12, slow=26, signal=9, append=True)
+                df_tf.ta.ema(length=20, append=True)
+                df_tf.ta.ema(length=50, append=True)
+                df_tf.ta.ema(length=100, append=True)
+                df_tf.ta.ema(length=200, append=True)
+                df_tf.ta.bbands(length=20, std=2, append=True)
+                df_tf.ta.atr(length=14, append=True)
+                df_tf.ta.adx(length=14, append=True)
+                df_tf.ta.mfi(length=14, append=True)
+                df_tf.ta.supertrend(period=10, multiplier=3, append=True)
+                df_tf.ta.ichimoku(append=True)
 
             # Очистка и упаковка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
@@ -80,7 +90,7 @@ async def process_task(symbol):
         print(f"  [!] Error {symbol}: {e}", flush=True)
 
 async def run_worker():
-    print("🚀 Indicator Engine v3.3 (SOLID) started", flush=True)
+    print("🚀 Indicator Engine v3.4 (SILENT BEAST) started", flush=True)
     await db.connect()
     try:
         await db.redis.xgroup_create("ta_tasks", "beast_group", id="0", mkstream=True)
@@ -92,7 +102,7 @@ async def run_worker():
                 stream_name, messages = response[0]
                 msg_id, data = messages[0]
                 symbol = data['symbol']
-                print(f"🛠️ [WORKING] {symbol}: Starting indicators calc...", flush=True)
+                print(f"🛠️ [WORKING] {symbol}: Calculating...", flush=True)
                 await process_task(symbol)
                 await db.redis.xack("ta_tasks", "beast_group", msg_id)
         except Exception as e:
