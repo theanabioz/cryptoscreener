@@ -96,21 +96,27 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
 
   // Real-time chart update
   useEffect(() => {
-    if (seriesRef.current && basePrice) {
-      // Get current time in seconds (matching Lightweight Charts format)
-      const now = Math.floor(Date.now() / 1000);
-      
-      // Determine candle time based on timeframe
-      // For simplicity, we just use the current minute/hour start
-      // but 'update' method handles timestamp matching automatically.
-      // If timestamp exists, it updates. If it's new, it adds.
-      
-      if (!klines || klines.length === 0) return;
+    if (seriesRef.current && basePrice && klines && klines.length > 0) {
       const lastK = klines[klines.length - 1];
-      const candleTime = Math.floor(Date.now() / 60000) * 60; // Current minute bucket
+      
+      // Helper to convert TF string to seconds
+      const getTfSeconds = (tf: string): number => {
+        const upper = tf.toUpperCase();
+        const val = parseInt(upper);
+        if (isNaN(val)) return 60;
+        if (upper.endsWith('M')) return val * 60;
+        if (upper.endsWith('H')) return val * 3600;
+        if (upper.endsWith('D')) return val * 86400;
+        if (upper.endsWith('W')) return val * 604800;
+        return 60;
+      };
 
-      if (lastK && candleTime === lastK.time) {
-        // Updating current existing candle
+      const tfSeconds = getTfSeconds(activeTf);
+      // Floor current time to the start of the timeframe bucket (in seconds)
+      const candleTime = Math.floor(Date.now() / 1000 / tfSeconds) * tfSeconds;
+
+      if (candleTime === lastK.time) {
+        // Updating current existing candle (the one fetched from history)
         seriesRef.current.update({
           time: lastK.time as any,
           open: lastK.open,
@@ -118,9 +124,9 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
           low: Math.min(lastK.low, basePrice),
           close: basePrice,
         });
-      } else if (lastK && candleTime > lastK.time) {
-        // Creating a new live candle
-        // The key is: OPEN must be equal to PREVIOUS CLOSE
+      } else if (candleTime > lastK.time) {
+        // Creating a new live candle (minute/hour/day just changed)
+        // Continuity: New Open MUST equal Previous Close
         seriesRef.current.update({
           time: candleTime as any,
           open: lastK.close,
@@ -130,7 +136,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         });
       }
     }
-  }, [basePrice, activeTf]); // Remove klines from dependency to avoid resetting on history load
+  }, [basePrice, activeTf, klines]);
 
   return (
     <Box w="full">
