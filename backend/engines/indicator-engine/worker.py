@@ -20,7 +20,7 @@ async def process_task(symbol):
         query = """
             SELECT time, open, high, low, close, volume
             FROM candles
-            WHERE symbol = $1 AND time > NOW() - INTERVAL '7 days'
+            WHERE symbol = $1 AND time > NOW() - INTERVAL '3 days'
             ORDER BY time ASC
         """
         rows = await db.fetch_all(query, symbol)

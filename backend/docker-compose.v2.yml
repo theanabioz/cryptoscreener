@@ -62,6 +62,15 @@ services:
       REDIS_HOST: redis
       PYTHONPATH: .
       PYTHONWARNINGS: ignore
+      OMP_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      NUMEXPR_NUM_THREADS: 1
+      VECLIB_MAXIMUM_THREADS: 1
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
     depends_on:
       redis: { condition: service_healthy }
     restart: always
