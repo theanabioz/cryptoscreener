@@ -48,7 +48,9 @@ async def process_task(symbol):
 
             if len(df_tf) < 52: continue
 
-            # Оборачиваем расчеты в игнорирование предупреждений
+            # Расчет индикаторов
+            # ВАЖНО: cores=1, так как мы масштабируемся через Docker
+            df_tf.ta.cores = 1 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 df_tf.ta.rsi(length=14, append=True)
