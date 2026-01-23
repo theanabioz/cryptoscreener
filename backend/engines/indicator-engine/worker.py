@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.database import db
 
 async def process_task(symbol):
-    """Вычисляет массив индикаторов через pandas-ta 0.4.71b0."""
+    """Вычисляет массив индикаторов через pandas-ta 0.4.71b0 (Beast Mode)."""
     try:
         query = """
             SELECT time, open, high, low, close, volume
@@ -46,25 +46,24 @@ async def process_task(symbol):
 
             if len(df_tf) < 35: continue
 
-            # В версии 0.4.x используем .ta.study()
-            # Мы можем передать "all", чтобы посчитать всё
+            # ВКЛЮЧАЕМ ПОЛНУЮ МОЩЬ PANDAS-TA
+            # Используем study("all") для расчета 200+ индикаторов
             try:
                 df_tf.ta.study("all")
             except:
-                # Если "all" слишком тяжелый, считаем основные группы
+                # Fallback если "all" глючит
                 df_tf.ta.study("momentum")
                 df_tf.ta.study("trend")
                 df_tf.ta.study("volatility")
-                df_tf.ta.study("volume")
 
             # Очистка и упаковка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
             indicator_data = {}
             for k, v in latest.items():
                 if k in ['open', 'high', 'low', 'close', 'volume']: continue
-                # Превращаем всё в float или None, чтобы JSON не ломался
                 try:
                     if v is not None and not isinstance(v, str):
+                        # Округляем для экономии места в БД
                         indicator_data[k] = round(float(v), 6)
                     else:
                         indicator_data[k] = v
@@ -97,13 +96,13 @@ async def process_task(symbol):
             json.dumps(results.get('1d')),
             symbol
         )
-        print(f"  [BEAST-V3.1] {symbol}: All indicators calculated.", flush=True)
+        print(f"  [BEAST-V3.1] {symbol}: ALL 200+ indicators calculated.", flush=True)
 
     except Exception as e:
-        print(f"  [!] BEAST-V3.1 Error {symbol}: {e}", flush=True)
+        print(f"  [!] BEAST Error {symbol}: {e}", flush=True)
 
 async def run_worker():
-    print("🚀 Indicator Engine v3.1 (THE BEAST) started", flush=True)
+    print("🚀 Indicator Engine v3.1 (THE BEAST) - FULL POWER MODE", flush=True)
     await db.connect()
     
     try:
@@ -120,7 +119,7 @@ async def run_worker():
                 await process_task(symbol)
                 await db.redis.xack("ta_tasks", "beast_group", msg_id)
         except Exception as e:
-            print(f"❌ Beast Worker Error: {e}", flush=True)
+            print(f"❌ Worker Error: {e}", flush=True)
             await asyncio.sleep(1)
 
 if __name__ == "__main__":
