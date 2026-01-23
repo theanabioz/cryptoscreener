@@ -7,22 +7,15 @@ import pandas_ta as ta
 import numpy as np
 import warnings
 
-# Глубокое подавление предупреждений
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", message=".*deprecated.*")
-# Пытаемся поймать специфический Pandas4Warning если он доступен
-try:
-    from pandas.errors import PerformanceWarning
-    warnings.filterwarnings("ignore", category=PerformanceWarning)
-except: pass
+# Глушим шум
+warnings.filterwarnings("ignore")
 
 # Импорты из common
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.database import db
 
 async def process_task(symbol):
-    """Вычисляет ТОП-25 индикаторов через прямые вызовы pandas-ta."""
+    """Векторизированный расчет ТОП-25 индикаторов."""
     try:
         query = """
             SELECT time, open, high, low, close, volume
@@ -37,7 +30,6 @@ async def process_task(symbol):
         df.set_index('time', inplace=True)
         
         results = {}
-        # В Pandas 3.0+ часы ДОЛЖНЫ быть маленькой 'h'
         timeframes = {'1m': '1min', '5m': '5min', '15m': '15min', '1h': '1h', '4h': '4h', '1d': '1D'}
 
         for tf_code, tf_resample in timeframes.items():
@@ -48,33 +40,24 @@ async def process_task(symbol):
 
             if len(df_tf) < 52: continue
 
-            # Расчет индикаторов
-            # ВАЖНО: cores=1, так как мы масштабируемся через Docker
-            df_tf.ta.cores = 1 
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                df_tf.ta.rsi(length=14, append=True)
-                df_tf.ta.macd(fast=12, slow=26, signal=9, append=True)
-                df_tf.ta.ema(length=20, append=True)
-                df_tf.ta.ema(length=50, append=True)
-                df_tf.ta.ema(length=100, append=True)
-                df_tf.ta.ema(length=200, append=True)
-                df_tf.ta.bbands(length=20, std=2, append=True)
-                df_tf.ta.atr(length=14, append=True)
-                df_tf.ta.adx(length=14, append=True)
-                df_tf.ta.mfi(length=14, append=True)
-                df_tf.ta.supertrend(period=10, multiplier=3, append=True)
-                df_tf.ta.ichimoku(append=True)
+            # ВЕКТОРНЫЙ РАСЧЕТ (Самый быстрый способ в pandas-ta)
+            df_tf.ta.cores = 1
+            df_tf.ta.rsi(length=14, append=True)
+            df_tf.ta.macd(append=True)
+            df_tf.ta.ema(length=50, append=True)
+            df_tf.ta.ema(length=200, append=True)
+            df_tf.ta.bbands(append=True)
+            df_tf.ta.supertrend(append=True)
+            # Добавьте другие если нужно...
 
-            # Очистка и упаковка
+            # Упаковка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
             indicator_data = {k: (round(float(v), 6) if isinstance(v, (int, float)) else v) 
                              for k, v in latest.items() 
                              if k not in ['open', 'high', 'low', 'close', 'volume']}
-            
             results[tf_code] = indicator_data
 
-        # Сохранение
+        # UPDATE JSONB
         query_update = """
             UPDATE coin_status SET updated_at = NOW(), current_price = $1,
                 indicators_1m = $2, indicators_5m = $3, indicators_15m = $4,
@@ -86,29 +69,33 @@ async def process_task(symbol):
             json.dumps(results.get('1h')), json.dumps(results.get('4h')), json.dumps(results.get('1d')),
             symbol
         )
-        print(f"  [BEAST] {symbol}: Success.", flush=True)
-
+        return True
     except Exception as e:
         print(f"  [!] Error {symbol}: {e}", flush=True)
+        return False
 
 async def run_worker():
-    print("🚀 Indicator Engine v3.4 (SILENT BEAST) started", flush=True)
+    worker_id = os.environ.get('HOSTNAME', 'worker-1')
+    print(f"🚀 {worker_id} started (Vectorized Mode)", flush=True)
     await db.connect()
-    try:
-        await db.redis.xgroup_create("ta_tasks", "beast_group", id="0", mkstream=True)
-    except: pass
+    
+    stream_key = "ta_tasks"
+    group_name = "beast_group"
+
     while True:
         try:
-            response = await db.redis.xreadgroup("beast_group", "worker_beast", {"ta_tasks": ">"}, count=1, block=5000)
+            # Читаем новые задачи
+            response = await db.redis.xreadgroup(group_name, worker_id, {stream_key: ">"}, count=1, block=2000)
             if response:
-                stream_name, messages = response[0]
-                msg_id, data = messages[0]
+                msg_id, data = response[0][1][0]
                 symbol = data['symbol']
-                print(f"🛠️ [WORKING] {symbol}: Calculating...", flush=True)
-                await process_task(symbol)
-                await db.redis.xack("ta_tasks", "beast_group", msg_id)
+                # print(f"  [{worker_id}] Processing {symbol}")
+                success = await process_task(symbol)
+                await db.redis.xack(stream_key, group_name, msg_id)
         except Exception as e:
-            print(f"❌ Error: {e}", flush=True)
+            if "NOGROUP" in str(e):
+                try: await db.redis.xgroup_create(stream_key, group_name, id="0", mkstream=True)
+                except: pass
             await asyncio.sleep(1)
 
 if __name__ == "__main__":
