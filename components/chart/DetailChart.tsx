@@ -173,9 +173,8 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         timerRef.current.style.display = 'none';
       } else {
         timerRef.current.style.display = 'block';
-        // Adjusting position to sit right on the scale area
-        // We subtract half of height to center it with the price label
-        timerRef.current.style.top = `${y - 9}px`; 
+        // Position it BELOW the price label (offset by ~14px)
+        timerRef.current.style.top = `${y + 12}px`; 
         timerRef.current.innerText = timerStr;
       }
     };
@@ -226,23 +225,20 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         {/* The Actual Chart */}
         <Box ref={chartContainerRef} w="full" h="100%" />
 
-        {/* Professional Candle Countdown Overlay (TradingView Style) */}
+        {/* Subtle Candle Countdown (TradingView Style) */}
         <div
           ref={timerRef}
           style={{
             position: 'absolute',
-            right: '8px', // Slightly offset from the very edge
+            right: '4px', // Aligned with axis text
             zIndex: 20,
-            backgroundColor: '#1A202C',
-            color: '#E2E8F0',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            padding: '1px 4px',
-            borderRadius: '2px',
+            color: '#A0AEC0', // Subtle gray like the axis text
+            fontSize: '9px',
+            fontWeight: 'normal',
             pointerEvents: 'none',
-            border: '1px solid #4A5568',
             fontFamily: 'monospace',
-            display: 'none'
+            display: 'none',
+            textShadow: '1px 1px 2px rgba(0,0,0,0.8)' // Better readability
           }}
         />
       </Box>
