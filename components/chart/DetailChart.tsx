@@ -1,9 +1,8 @@
 'use client'
 
 import { createChart, ColorType, IChartApi, CandlestickSeries, ISeriesApi } from 'lightweight-charts';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Box, HStack, Button, Spinner, Center, Text } from '@chakra-ui/react';
-// useKlines removed
 
 export const TIMEFRAMES = ['1M', '3M', '5M', '15M', '30M', '1H', '4H', '1D', '1W'];
 
@@ -16,8 +15,8 @@ interface Kline {
 }
 
 interface DetailChartProps {
-  coinId: string; // This is actually 'btc', 'eth'
-  symbol: string; // This should be 'BTC', 'ETH' for API
+  coinId: string;
+  symbol: string;
   basePrice: number;
   isPositive: boolean;
   klines: Kline[] | undefined;
@@ -32,7 +31,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
-  // 1. Initialize Chart ONCE
+  // 1. Initialize Chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -51,7 +50,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         timeVisible: true,
         secondsVisible: false,
         borderVisible: false,
-        barSpacing: 12, // Оптимальная ширина для мобильных (влезет ~30-40 свечей)
+        barSpacing: 12,
         rightOffset: 2,
       },
       rightPriceScale: {
@@ -84,22 +83,20 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, []); // Run once on mount
+  }, []);
 
-  // 2. Update Data when klines change
+  // 2. Update Data when history changes
   useEffect(() => {
     if (seriesRef.current && klines && klines.length > 0) {
       seriesRef.current.setData(klines as any);
-      // chartRef.current?.timeScale().fitContent(); // Удалено для сохранения масштаба
     }
   }, [klines]);
 
-  // Real-time chart update
+  // 3. Real-time candle updates
   useEffect(() => {
     if (seriesRef.current && basePrice && klines && klines.length > 0) {
       const lastK = klines[klines.length - 1];
       
-      // Helper to convert TF string to seconds
       const getTfSeconds = (tf: string): number => {
         const upper = tf.toUpperCase();
         const val = parseInt(upper);
@@ -112,11 +109,9 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       };
 
       const tfSeconds = getTfSeconds(activeTf);
-      // Floor current time to the start of the timeframe bucket (in seconds)
       const candleTime = Math.floor(Date.now() / 1000 / tfSeconds) * tfSeconds;
 
       if (candleTime === lastK.time) {
-        // Updating current existing candle (the one fetched from history)
         seriesRef.current.update({
           time: lastK.time as any,
           open: lastK.open,
@@ -125,8 +120,6 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
           close: basePrice,
         });
       } else if (candleTime > lastK.time) {
-        // Creating a new live candle (minute/hour/day just changed)
-        // Continuity: New Open MUST equal Previous Close
         seriesRef.current.update({
           time: candleTime as any,
           open: lastK.close,
@@ -137,61 +130,6 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       }
     }
   }, [basePrice, activeTf, klines]);
-
-  // Candle Countdown Overlay Logic
-  const timerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!seriesRef.current || !chartRef.current || !timerRef.current) return;
-
-    const updateTimer = () => {
-      if (!seriesRef.current || !timerRef.current) return;
-
-      // 1. Calculate remaining time
-      const getTfSeconds = (tf: string): number => {
-        const upper = tf.toUpperCase();
-        const val = parseInt(upper);
-        if (isNaN(val)) return 60;
-        if (upper.endsWith('M')) return val * 60;
-        if (upper.endsWith('H')) return val * 3600;
-        if (upper.endsWith('D')) return val * 86400;
-        if (upper.endsWith('W')) return val * 604800;
-        return 60;
-      };
-
-      const tfSeconds = getTfSeconds(activeTf);
-      const now = Math.floor(Date.now() / 1000);
-      const remaining = tfSeconds - (now % tfSeconds);
-      const m = Math.floor((remaining % 3600) / 60);
-      const s = remaining % 60;
-      const timerStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-
-      // 2. Get Y coordinate of the current price
-      const y = seriesRef.current.priceToCoordinate(basePrice);
-      
-      if (y === null) {
-        timerRef.current.style.display = 'none';
-      } else {
-        timerRef.current.style.display = 'block';
-        
-        const lastK = klines && klines.length > 0 ? klines[klines.length - 1] : null;
-        // Определяем цвет на основе текущей свечи (как это делает график)
-        const isCurrentUp = basePrice >= (lastK?.open || basePrice);
-        const activeColor = isCurrentUp ? '#48BB78' : '#F56565';
-        
-        // Позиционируем впритык под метку цены. 
-        // Стандартная метка имеет высоту ~18-20px и центрирована по Y.
-        timerRef.current.style.top = `${y + 10}px`; 
-        timerRef.current.innerText = timerStr;
-        timerRef.current.style.backgroundColor = activeColor;
-      }
-    };
-
-    const interval = setInterval(updateTimer, 1000);
-    updateTimer();
-
-    return () => clearInterval(interval);
-  }, [activeTf, basePrice, klines]); // Убрали зависимость от isPositive, теперь считаем сами
 
   return (
     <Box w="full">
@@ -229,32 +167,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
             <Text color="red.400" fontSize="sm">Error loading chart</Text>
           </Center>
         )}
-        
-        {/* The Actual Chart */}
         <Box ref={chartContainerRef} w="full" h="100%" />
-
-        {/* TradingView-like Candle Countdown */}
-        <div
-          ref={timerRef}
-          style={{
-            position: 'absolute',
-            right: '0px', 
-            zIndex: 20,
-            color: 'white',
-            fontSize: '10px',
-            fontWeight: '500',
-            padding: '0px 4px',
-            pointerEvents: 'none',
-            // Используем тот же шрифт, что и в канвасе графика
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-            display: 'none',
-            minWidth: '54px', // Чуть шире для стабильности
-            textAlign: 'center',
-            borderTopLeftRadius: '0px', // Плоский стык сверху
-            borderBottomLeftRadius: '2px',
-            lineHeight: '1.4',
-          }}
-        />
       </Box>
     </Box>
   );
