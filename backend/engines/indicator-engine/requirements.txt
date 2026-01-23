@@ -4,7 +4,7 @@ asyncpg==0.29.0
 pydantic==2.6.0
 python-dotenv==1.0.0
 pandas==2.2.0
-pandas-ta==0.3.14b0
+pandas-ta
 numpy==1.26.3
 ccxt>=4.4.0
 aiohttp<3.10.0
