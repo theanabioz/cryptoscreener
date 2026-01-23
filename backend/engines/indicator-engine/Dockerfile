@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Установка системных зависимостей + wget для скачивания TA-Lib
+# 1. Системные зависимости (build-essential нужен для компиляции TA-Lib)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Сборка и установка TA-Lib (C library)
+# 2. Сборка и установка C-библиотеки TA-Lib
 RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     tar -xvzf ta-lib-0.4.0-src.tar.gz && \
     cd ta-lib/ && \
@@ -19,23 +19,19 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     make install && \
     cd .. && rm -rf ta-lib*
 
-# Копируем requirements
+# 3. Установка Python зависимостей
 COPY engines/indicator-engine/requirements.txt .
-# Устанавливаем Python-обертку TA-Lib вместе с остальными
-RUN pip install --no-cache-dir TA-Lib
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем и устанавливаем локальный pandas-ta
-COPY ./pandas_ta-0.4.71b0.tar.gz* /tmp/
-RUN if [ -f /tmp/pandas_ta-0.4.71b0.tar.gz ]; then \
-        pip install --no-cache-dir /tmp/pandas_ta-0.4.71b0.tar.gz; \
-    else \
-        pip install --no-cache-dir pandas-ta; \
-    fi
+# 4. Установка вашей версии pandas-ta из архива
+COPY ./pandas_ta-0.4.71b0.tar.gz /tmp/
+RUN pip install --no-cache-dir /tmp/pandas_ta-0.4.71b0.tar.gz && rm /tmp/pandas_ta-0.4.71b0.tar.gz
 
-# Копируем ВЕСЬ бэкенд
+# 5. Копирование кода
 COPY . .
 
+# Окружение
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
 CMD ["python3", "engines/indicator-engine/scheduler.py"]
