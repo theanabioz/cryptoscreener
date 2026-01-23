@@ -3,18 +3,17 @@ import sys
 import os
 import json
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 # Импорты из common
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.database import db
+from common.ta_lib import calculate_all_indicators
 
 async def process_task(symbol):
     """Вычисляет массив индикаторов (The Beast Mode) для всех таймфреймов."""
     try:
-        # Для качественного расчета 200 индикаторов нам нужно хотя бы 300 свечей
-        # Запрашиваем 1м свечи и будем их ресемплить (это быстрее и точнее)
+        # Запрашиваем 7 дней истории
         query = """
             SELECT time, open, high, low, close, volume
             FROM candles
@@ -28,7 +27,6 @@ async def process_task(symbol):
         df.set_index('time', inplace=True)
         
         results = {}
-        # Таймфреймы для расчета
         timeframes = {
             '1m': '1min',
             '5m': '5min',
@@ -39,7 +37,6 @@ async def process_task(symbol):
         }
 
         for tf_code, tf_resample in timeframes.items():
-            # 1. Ресемплинг данных под нужный таймфрейм
             df_tf = df.resample(tf_resample).agg({
                 'open': 'first',
                 'high': 'max',
@@ -50,20 +47,10 @@ async def process_task(symbol):
 
             if len(df_tf) < 20: continue
 
-            # 2. МАССОВЫЙ РАСЧЕТ ИНДИКАТОРОВ (pandas-ta)
-            # Мы используем встроенную стратегию 'All', чтобы посчитать максимум возможного
-            # Или настраиваем свой список 'The Beast'
-            df_tf.ta.strategy("All") # Это посчитает ~150-200 индикаторов одним махом!
+            # Расчет всех индикаторов одной функцией
+            results[tf_code] = calculate_all_indicators(df_tf)
 
-            # 3. Подготовка JSON
-            # Берем последнюю строку (текущие значения)
-            latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
-            
-            # Убираем базовые OHLC, оставляем только индикаторы
-            indicator_data = {k: v for k, v in latest.items() if k not in ['open', 'high', 'low', 'close', 'volume']}
-            results[tf_code] = indicator_data
-
-        # 4. Сохранение в БД
+        # Сохранение в БД
         query_update = f"""
             UPDATE coin_status SET
                 updated_at = NOW(),
@@ -87,13 +74,13 @@ async def process_task(symbol):
             json.dumps(results.get('1d')),
             symbol
         )
-        print(f"  [BEAST] {symbol}: All indicators calculated.", flush=True)
+        print(f"  [BEAST-V3] {symbol}: All indicators calculated.", flush=True)
 
     except Exception as e:
-        print(f"  [!] BEAST Error {symbol}: {e}", flush=True)
+        print(f"  [!] BEAST-V3 Error {symbol}: {e}", flush=True)
 
 async def run_worker():
-    print("🚀 Indicator Engine v3 (THE BEAST) started", flush=True)
+    print("🚀 Indicator Engine v3 (THE BEAST) started - Native Mode", flush=True)
     await db.connect()
     
     try:
