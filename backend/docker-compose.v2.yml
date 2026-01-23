@@ -67,10 +67,8 @@ services:
       OPENBLAS_NUM_THREADS: 1
       NUMEXPR_NUM_THREADS: 1
       VECLIB_MAXIMUM_THREADS: 1
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
+    cpus: 1.0
+    mem_limit: 512M
     depends_on:
       redis: { condition: service_healthy }
     restart: always

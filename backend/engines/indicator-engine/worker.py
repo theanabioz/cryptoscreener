@@ -93,6 +93,7 @@ async def run_worker():
                 await process_task(symbol)
                 await db.redis.xack(stream_key, group_name, msg_id)
                 print(f"✅ [DONE] {symbol}", flush=True)
+                await asyncio.sleep(0.1) # Микро-пауза для охлаждения CPU
         except Exception as e:
             if "NOGROUP" in str(e):
                 try: await db.redis.xgroup_create(stream_key, group_name, id="0", mkstream=True)
