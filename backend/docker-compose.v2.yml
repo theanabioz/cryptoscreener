@@ -110,7 +110,7 @@ services:
       PYTHONPATH: .
     depends_on:
       timescaledb: { condition: service_healthy }
-      restart: always
+    restart: always
 
   control-panel:
     image: amir20/dozzle:latest
