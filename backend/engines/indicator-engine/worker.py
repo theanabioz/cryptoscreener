@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.database import db
 
 async def process_task(symbol):
-    """Вычисляет массив индикаторов (The Beast v3.1) через pandas-ta 0.4.71b0."""
+    """Вычисляет массив индикаторов через pandas-ta 0.4.71b0."""
     try:
         query = """
             SELECT time, open, high, low, close, volume
@@ -35,6 +35,13 @@ async def process_task(symbol):
             '1d': '1D'
         }
 
+        # В версии 0.4.x используем встроенную стратегию All через ta.all_strategy
+        beast_strategy = ta.Strategy(
+            name="The Beast",
+            description="Calculate all available indicators",
+            ta=[{"kind": "all"}]
+        )
+
         for tf_code, tf_resample in timeframes.items():
             df_tf = df.resample(tf_resample).agg({
                 'open': 'first',
@@ -46,13 +53,12 @@ async def process_task(symbol):
 
             if len(df_tf) < 20: continue
 
-            # МАССОВЫЙ РАСЧЕТ ЧЕРЕЗ PANDAS-TA
-            # Используем стратегию All для максимального охвата
-            df_tf.ta.strategy("All")
+            # Расчет
+            df_tf.ta.study(beast_strategy)
 
-            # Очистка и упаковка в JSON
+            # Очистка и упаковка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
-            indicator_data = {k: (round(float(v), 6) if v is not None else None) 
+            indicator_data = {k: (round(float(v), 6) if v is not None and not isinstance(v, str) else v) 
                              for k, v in latest.items() 
                              if k not in ['open', 'high', 'low', 'close', 'volume']}
             
@@ -82,7 +88,7 @@ async def process_task(symbol):
             json.dumps(results.get('1d')),
             symbol
         )
-        print(f"  [BEAST-V3.1] {symbol}: 200+ indicators calculated via pandas-ta 0.4.71b0", flush=True)
+        print(f"  [BEAST-V3.1] {symbol}: 200+ indicators calculated.", flush=True)
 
     except Exception as e:
         print(f"  [!] BEAST-V3.1 Error {symbol}: {e}", flush=True)
