@@ -174,7 +174,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
       } else {
         timerRef.current.style.display = 'block';
         
-        const lastK = klines[klines.length - 1];
+        const lastK = klines && klines.length > 0 ? klines[klines.length - 1] : null;
         // Определяем цвет на основе текущей свечи (как это делает график)
         const isCurrentUp = basePrice >= (lastK?.open || basePrice);
         const activeColor = isCurrentUp ? '#48BB78' : '#F56565';
