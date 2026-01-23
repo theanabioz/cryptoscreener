@@ -35,23 +35,23 @@ The system is designed for High-Frequency updates (1s latency) and Deep Historic
 ## 🚀 Future Architecture: Distributed Engine Model
 To ensure professional-grade scalability and reliability, the system is migrating from monolithic workers to a distributed engine model.
 
-### ⚙️ Core Engines
+### ⚙️ Core Engines (v3 Evolution)
 1.  **Data Engine (Ingestor):**
-    - Consists of `streamer` and `gap_filler`.
-    - Responsible for raw data delivery from Binance to TimescaleDB and Redis.
-2.  **Indicator Engine (IE):**
-    - High-performance TA calculation (RSI, MACD, etc.).
-    - Uses a task queue (Redis Streams) to distribute calculations across multiple IE-Workers.
-    - **Scalability:** Can be scaled horizontally by adding more worker containers.
+    - High-speed WebSocket streaming to Redis.
+    - Decoupled from DB writes to ensure zero-latency price updates.
+2.  **Indicator Engine (IE) v3 "The Factory":**
+    - **Library:** Powered by `pandas-ta` (200+ professional indicators).
+    - **Logic:** Multi-timeframe grid calculation (1m, 5m, 15m, 1h, 4h, 1d).
+    - **Storage:** Uses **PostgreSQL JSONB** columns (`indicators_1m`, `indicators_1h`, etc.) instead of fixed columns. This allows storing hundreds of indicators without schema changes.
+    - **Scalability:** Task distribution via Redis Streams to N parallel workers.
 3.  **Strategy Engine (SE):**
-    - Event-driven logic that scans pre-calculated indicators for signals (e.g., "RSI < 30").
-    - Decoupled from mathematical calculations.
+    - Scans the JSONB indicator blobs using advanced SQL queries or Python logic.
+    - Generates multi-confirmation signals (e.g., "RSI < 30 AND Price below BB Lower AND Volume > Average").
 4.  **Notification Engine (NE):**
-    - Handles user alerts and Telegram Bot API interactions.
-    - Isolated from data processing to ensure high delivery reliability.
+    - Reliable Telegram delivery with queue management.
 
-### 🛣️ Data Flow (Distributed)
-`Binance WS` ➡️ `Data Engine` ➡️ `Redis Pub/Sub` ➡️ `Indicator Engine (Workers)` ➡️ `Redis Cache / DB` ➡️ `Strategy Engine` ➡️ `Notification Engine` ➡️ `Telegram User`
+### 🛣️ Data Flow (v3)
+`Binance` ➡️ `Data Engine` ➡️ `Redis Pub/Sub` (Live Price) ➡️ `Indicator Workers` ➡️ `JSONB Indicator Blobs` ➡️ `Strategy Engine` ➡️ `Notification Engine`
 
 ## 🛠 Deployment
 - **Frontend:** Vercel (Auto-deploy).
