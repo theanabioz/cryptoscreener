@@ -35,13 +35,6 @@ async def process_task(symbol):
             '1d': '1D'
         }
 
-        # В версии 0.4.x используем встроенную стратегию All через ta.all_strategy
-        beast_strategy = ta.Strategy(
-            name="The Beast",
-            description="Calculate all available indicators",
-            ta=[{"kind": "all"}]
-        )
-
         for tf_code, tf_resample in timeframes.items():
             df_tf = df.resample(tf_resample).agg({
                 'open': 'first',
@@ -51,12 +44,12 @@ async def process_task(symbol):
                 'volume': 'sum'
             }).dropna()
 
-            if len(df_tf) < 20: continue
+            if len(df_tf) < 30: continue # Нужно больше данных для "All" стратегии
 
-            # Расчет
-            df_tf.ta.study(beast_strategy)
+            # РАСЧЕТ ВСЕГО МИРА
+            df_tf.ta.strategy(ta.AllStrategy) 
 
-            # Очистка и упаковка
+            # Очистка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
             indicator_data = {k: (round(float(v), 6) if v is not None and not isinstance(v, str) else v) 
                              for k, v in latest.items() 
@@ -88,13 +81,13 @@ async def process_task(symbol):
             json.dumps(results.get('1d')),
             symbol
         )
-        print(f"  [BEAST-V3.1] {symbol}: 200+ indicators calculated.", flush=True)
+        print(f"  [BEAST-V3.1] {symbol}: Success.", flush=True)
 
     except Exception as e:
         print(f"  [!] BEAST-V3.1 Error {symbol}: {e}", flush=True)
 
 async def run_worker():
-    print("🚀 Indicator Engine v3.1 (THE BEAST) started - Pro Mode (Py 3.12)", flush=True)
+    print("🚀 Indicator Engine v3.1 (THE BEAST) started - Pro Mode", flush=True)
     await db.connect()
     
     try:
