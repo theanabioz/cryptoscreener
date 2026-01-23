@@ -68,13 +68,13 @@ async def get_coins(ids: str = None, strategy: str = None):
             elif isinstance(inds_raw, dict):
                 inds = inds_raw
             
-            # Пытаемся найти ключи (могут быть разными в разных версиях pandas-ta)
-            rsi = inds.get('RSI_14') or inds.get('rsi_14')
-            macd = inds.get('MACD_12_26_9') or inds.get('macd')
-            macd_s = inds.get('MACDs_12_26_9') or inds.get('macd_signal')
-            ema50 = inds.get('EMA_50') or inds.get('ema_50')
-            bb_u = inds.get('BBU_20_2.0') or inds.get('bb_upper')
-            bb_l = inds.get('BBL_20_2.0') or inds.get('bb_lower')
+            # Пытаемся найти ключи (маппинг под pandas-ta 0.4.x)
+            rsi = inds.get('RSI_14')
+            macd = inds.get('MACD_12_26_9')
+            macd_s = inds.get('MACDs_12_26_9')
+            ema50 = inds.get('EMA_50')
+            bb_u = inds.get('BBU_20_2.0_2.0')
+            bb_l = inds.get('BBL_20_2.0_2.0')
 
             # Картинка
             image_url = f"https://s2.coinmarketcap.com/static/img/coins/64x64/{row['cmc_id'] or 1}.png"
