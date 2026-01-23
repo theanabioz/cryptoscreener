@@ -173,9 +173,10 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         timerRef.current.style.display = 'none';
       } else {
         timerRef.current.style.display = 'block';
-        // Position it BELOW the price label (offset by ~14px)
-        timerRef.current.style.top = `${y + 12}px`; 
+        // Позиционируем прямо под или над ценой, чтобы выглядело как единый блок
+        timerRef.current.style.top = `${y + 14}px`; 
         timerRef.current.innerText = timerStr;
+        timerRef.current.style.backgroundColor = isPositive ? '#48BB78' : '#F56565';
       }
     };
 
@@ -183,7 +184,7 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
     updateTimer();
 
     return () => clearInterval(interval);
-  }, [activeTf, basePrice, klines]);
+  }, [activeTf, basePrice, klines, isPositive]);
 
   return (
     <Box w="full">
@@ -225,20 +226,24 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
         {/* The Actual Chart */}
         <Box ref={chartContainerRef} w="full" h="100%" />
 
-        {/* Subtle Candle Countdown (TradingView Style) */}
+        {/* Dynamic Candle Countdown (Matches Price Label) */}
         <div
           ref={timerRef}
           style={{
             position: 'absolute',
-            right: '4px', // Aligned with axis text
+            right: '0px', 
             zIndex: 20,
-            color: '#A0AEC0', // Subtle gray like the axis text
-            fontSize: '9px',
-            fontWeight: 'normal',
+            color: 'white',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            padding: '2px 4px',
             pointerEvents: 'none',
             fontFamily: 'monospace',
             display: 'none',
-            textShadow: '1px 1px 2px rgba(0,0,0,0.8)' // Better readability
+            minWidth: '45px',
+            textAlign: 'center',
+            borderTopLeftRadius: '2px',
+            borderBottomLeftRadius: '2px',
           }}
         />
       </Box>
