@@ -44,16 +44,32 @@ async def process_task(symbol):
                 'volume': 'sum'
             }).dropna()
 
-            if len(df_tf) < 30: continue # Нужно больше данных для "All" стратегии
+            if len(df_tf) < 35: continue
 
-            # РАСЧЕТ ВСЕГО МИРА
-            df_tf.ta.strategy(ta.AllStrategy) 
+            # В версии 0.4.x используем .ta.study()
+            # Мы можем передать "all", чтобы посчитать всё
+            try:
+                df_tf.ta.study("all")
+            except:
+                # Если "all" слишком тяжелый, считаем основные группы
+                df_tf.ta.study("momentum")
+                df_tf.ta.study("trend")
+                df_tf.ta.study("volatility")
+                df_tf.ta.study("volume")
 
-            # Очистка
+            # Очистка и упаковка
             latest = df_tf.iloc[-1].replace({np.nan: None}).to_dict()
-            indicator_data = {k: (round(float(v), 6) if v is not None and not isinstance(v, str) else v) 
-                             for k, v in latest.items() 
-                             if k not in ['open', 'high', 'low', 'close', 'volume']}
+            indicator_data = {}
+            for k, v in latest.items():
+                if k in ['open', 'high', 'low', 'close', 'volume']: continue
+                # Превращаем всё в float или None, чтобы JSON не ломался
+                try:
+                    if v is not None and not isinstance(v, str):
+                        indicator_data[k] = round(float(v), 6)
+                    else:
+                        indicator_data[k] = v
+                except:
+                    indicator_data[k] = None
             
             results[tf_code] = indicator_data
 
@@ -81,13 +97,13 @@ async def process_task(symbol):
             json.dumps(results.get('1d')),
             symbol
         )
-        print(f"  [BEAST-V3.1] {symbol}: Success.", flush=True)
+        print(f"  [BEAST-V3.1] {symbol}: All indicators calculated.", flush=True)
 
     except Exception as e:
         print(f"  [!] BEAST-V3.1 Error {symbol}: {e}", flush=True)
 
 async def run_worker():
-    print("🚀 Indicator Engine v3.1 (THE BEAST) started - Pro Mode", flush=True)
+    print("🚀 Indicator Engine v3.1 (THE BEAST) started", flush=True)
     await db.connect()
     
     try:
