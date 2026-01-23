@@ -5,6 +5,10 @@ import json
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
+import warnings
+
+# Глушим предупреждения библиотек (Pandas4Warning, DeprecationWarning и т.д.)
+warnings.filterwarnings("ignore")
 
 # Импорты из common
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
