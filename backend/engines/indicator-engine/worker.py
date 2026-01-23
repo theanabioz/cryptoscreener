@@ -87,7 +87,9 @@ async def run_worker():
             if response:
                 stream_name, messages = response[0]
                 msg_id, data = messages[0]
-                await process_task(data['symbol'])
+                symbol = data['symbol']
+                print(f"🛠️ [WORKING] {symbol}: Starting indicators calc...", flush=True)
+                await process_task(symbol)
                 await db.redis.xack("ta_tasks", "beast_group", msg_id)
         except Exception as e:
             print(f"❌ Error: {e}", flush=True)

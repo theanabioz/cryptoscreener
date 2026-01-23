@@ -137,6 +137,16 @@ services:
       retries: 5
     restart: always
 
+  # 8. Control Panel (Real-time Logs)
+  control-panel:
+    image: amir20/dozzle:latest
+    container_name: crypto_control_panel
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8888:8080"
+    restart: always
+
 volumes:
   ts_data:
     external: true
