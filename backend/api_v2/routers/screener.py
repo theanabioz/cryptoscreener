@@ -57,11 +57,18 @@ async def get_coins(ids: str = None, strategy: str = None):
             open_24h = row['open_24h']
             change_pct = ((price - open_24h) / open_24h * 100) if open_24h else 0
             
-            # Извлекаем индикаторы из JSONB
-            inds = row['indicators_1h'] or {}
+            # Извлекаем индикаторы из JSONB (безопасно)
+            inds_raw = row['indicators_1h']
+            inds = {}
+            if isinstance(inds_raw, str):
+                try:
+                    inds = json.loads(inds_raw)
+                except:
+                    inds = {}
+            elif isinstance(inds_raw, dict):
+                inds = inds_raw
             
-            # В pandas-ta ключи обычно в верхнем регистре или имеют специфические имена
-            # Пытаемся найти RSI_14 (или rsi_14 в зависимости от версии)
+            # Пытаемся найти ключи (могут быть разными в разных версиях pandas-ta)
             rsi = inds.get('RSI_14') or inds.get('rsi_14')
             macd = inds.get('MACD_12_26_9') or inds.get('macd')
             macd_s = inds.get('MACDs_12_26_9') or inds.get('macd_signal')
