@@ -8,4 +8,4 @@ numpy<2.0.0
 ccxt>=4.4.0
 redis>=5.0.0
 websockets>=12.0
-https://github.com/twopirllc/pandas-ta/archive/refs/heads/master.zip
+pandas_ta
