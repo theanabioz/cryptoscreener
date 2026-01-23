@@ -138,6 +138,73 @@ export const DetailChart = ({ coinId, symbol, basePrice, isPositive, klines, isL
     }
   }, [basePrice, activeTf, klines]);
 
+  // Candle Countdown Logic
+  const priceLineRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!seriesRef.current || !activeTf) return;
+
+    // Remove old line if exists
+    if (priceLineRef.current) {
+      seriesRef.current.removePriceLine(priceLineRef.current);
+    }
+
+    // Create a "ghost" price line for the timer
+    // We set lineVisible: false to only show the label on the axis
+    priceLineRef.current = seriesRef.current.createPriceLine({
+      price: basePrice,
+      color: 'transparent',
+      lineWidth: 0,
+      axisLabelVisible: true,
+      title: '',
+      lineVisible: false,
+    });
+
+    const updateTimer = () => {
+      const getTfSeconds = (tf: string): number => {
+        const upper = tf.toUpperCase();
+        const val = parseInt(upper);
+        if (isNaN(val)) return 60;
+        if (upper.endsWith('M')) return val * 60;
+        if (upper.endsWith('H')) return val * 3600;
+        if (upper.endsWith('D')) return val * 86400;
+        if (upper.endsWith('W')) return val * 604800;
+        return 60;
+      };
+
+      const tfSeconds = getTfSeconds(activeTf);
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = tfSeconds - (now % tfSeconds);
+
+      const h = Math.floor(remaining / 3600);
+      const m = Math.floor((remaining % 3600) / 60);
+      const s = remaining % 60;
+      
+      let timerStr = '';
+      if (h > 0) timerStr += `${h}:`;
+      timerStr += `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+      if (priceLineRef.current) {
+        priceLineRef.current.applyOptions({
+          price: basePrice,
+          title: timerStr,
+        });
+      }
+    };
+
+    const interval = setInterval(updateTimer, 1000);
+    updateTimer();
+
+    return () => {
+      clearInterval(interval);
+      if (priceLineRef.current && seriesRef.current) {
+        try {
+            seriesRef.current.removePriceLine(priceLineRef.current);
+        } catch(e) {}
+      }
+    };
+  }, [activeTf, basePrice]);
+
   return (
     <Box w="full">
       <Box overflowX="auto" pb={2} px={4} sx={{
