@@ -14,7 +14,7 @@ async def get_coins(ids: str = None, strategy: str = None):
     """
     
     # Базовый запрос
-    # Sparkline теперь берем из coin_status (предрассчитанный worker-ом)
+    # Данные теперь тянем из JSONB поля indicators_1h
     query_base = """
         WITH latest_data AS (
             SELECT 
@@ -28,12 +28,7 @@ async def get_coins(ids: str = None, strategy: str = None):
         )
         SELECT 
             ld.*,
-            cs.rsi_14,
-            cs.macd,
-            cs.macd_signal,
-            cs.ema_50,
-            cs.bb_upper,
-            cs.bb_lower,
+            cs.indicators_1h,
             cs.market_cap,
             cs.cmc_id,
             cs.sparkline_in_7d
@@ -45,24 +40,13 @@ async def get_coins(ids: str = None, strategy: str = None):
     
     params = []
     
-    # Фильтрация по стратегии
+    # Фильтрация по стратегии (теперь через JSONB)
     if strategy == 'rsi-oversold':
-        query_base += " AND cs.rsi_14 < 30"
+        query_base += " AND (cs.indicators_1h->>'RSI_14')::float < 30"
     elif strategy == 'strong-trend':
-        query_base += " AND ld.current_price > cs.ema_50"
+        query_base += " AND ld.current_price > (cs.indicators_1h->>'EMA_50')::float"
     elif strategy == 'pump-radar':
-        # Пока просто фильтр по высокому объему, в будущем - аномалия
         query_base += " AND ld.volume_24h > 50000000" 
-    elif strategy == 'volatility':
-        # Change > 5% or < -5% (нужно считать change в SQL для фильтрации)
-        # Упростим: просто вернем все, отсортируем на клиенте или сделаем HAVING
-        pass
-
-    # Фильтрация по ID (если нужно)
-    if ids:
-        id_list = ids.split(',')
-        # Сложно матчить 'btc' с 'BTC/USDT', пропустим пока для краткости
-        pass
 
     try:
         rows = await db.fetch_all(query_base)
@@ -73,31 +57,29 @@ async def get_coins(ids: str = None, strategy: str = None):
             open_24h = row['open_24h']
             change_pct = ((price - open_24h) / open_24h * 100) if open_24h else 0
             
-            # Доп. фильтрация на Python (если сложно в SQL)
-            if strategy == 'volatility' and abs(change_pct) < 5:
-                continue
+            # Извлекаем индикаторы из JSONB
+            inds = row['indicators_1h'] or {}
             
-            # Генерация URL логотипа
-            if row['cmc_id']:
-                image_url = f"https://s2.coinmarketcap.com/static/img/coins/64x64/{row['cmc_id']}.png"
-            else:
-                # Если ID нет, используем общую заглушку (логотип BTC как fallback)
-                image_url = "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png"
+            # В pandas-ta ключи обычно в верхнем регистре или имеют специфические имена
+            # Пытаемся найти RSI_14 (или rsi_14 в зависимости от версии)
+            rsi = inds.get('RSI_14') or inds.get('rsi_14')
+            macd = inds.get('MACD_12_26_9') or inds.get('macd')
+            macd_s = inds.get('MACDs_12_26_9') or inds.get('macd_signal')
+            ema50 = inds.get('EMA_50') or inds.get('ema_50')
+            bb_u = inds.get('BBU_20_2.0') or inds.get('bb_upper')
+            bb_l = inds.get('BBL_20_2.0') or inds.get('bb_lower')
+
+            # Картинка
+            image_url = f"https://s2.coinmarketcap.com/static/img/coins/64x64/{row['cmc_id'] or 1}.png"
             
             # Спарклайн
             sparkline_final = {"price": []}
             if row['sparkline_in_7d']:
                 try:
                     val = row['sparkline_in_7d']
-                    if isinstance(val, str):
-                        val = json.loads(val)
-                    
-                    if isinstance(val, dict) and "price" in val:
-                        sparkline_final = val
-                    elif isinstance(val, list):
-                        sparkline_final = {"price": val}
-                except:
-                    pass
+                    if isinstance(val, str): val = json.loads(val)
+                    if isinstance(val, dict) and "price" in val: sparkline_final = val
+                except: pass
 
             result.append({
                 "id": row['symbol'].replace('/', '').lower(),
@@ -108,12 +90,12 @@ async def get_coins(ids: str = None, strategy: str = None):
                 "price_change_percentage_24h": round(change_pct, 2),
                 "market_cap": row['market_cap'] or 0,
                 "total_volume": row['volume_24h'] or 0,
-                "rsi": round(row['rsi_14'], 2) if row['rsi_14'] is not None else 50.0, 
-                "macd": round(row['macd'], 2) if row['macd'] is not None else 0,
-                "macd_signal": round(row['macd_signal'], 2) if row['macd_signal'] is not None else 0,
-                "ema50": row['ema_50'],
-                "bb_upper": row['bb_upper'],
-                "bb_lower": row['bb_lower'],
+                "rsi": round(float(rsi), 2) if rsi is not None else 50.0, 
+                "macd": round(float(macd), 2) if macd is not None else 0,
+                "macd_signal": round(float(macd_s), 2) if macd_s is not None else 0,
+                "ema50": float(ema50) if ema50 is not None else None,
+                "bb_upper": float(bb_u) if bb_u is not None else None,
+                "bb_lower": float(bb_l) if bb_l is not None else None,
                 "sparkline_in_7d": sparkline_final
             })
             
